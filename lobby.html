@@ -29,7 +29,8 @@
         <div id="uName" class="font-semibold text-white">...</div>
         <div id="uRole" class="text-xs text-neutral-400">...</div>
       </div>
-      <button onclick="leaveRoom()" class="text-xs border border-neutral-700 hover:border-red-500 px-3 py-1.5 rounded-lg text-neutral-400 hover:text-white">
+      <!-- ปุ่มออกจากห้อง (ย้ายกลับไปหน้า Login) -->
+      <button onclick="leaveRoom()" class="text-xs border border-neutral-700 hover:border-red-500 px-3 py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
         ออกจากห้อง
       </button>
     </div>
@@ -56,7 +57,7 @@
         </div>
 
         <div id="playerList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[460px] overflow-y-auto pr-1">
-          <!-- ผู้เล่นจะแสดงที่นี่แบบ Realtime -->
+          <!-- แสดงผลผู้เล่นแบบ Realtime -->
         </div>
       </div>
 
@@ -110,6 +111,7 @@
 
   <!-- Firebase Scripts -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script>
@@ -148,14 +150,12 @@
         const players = snap.docs.map(d => d.data());
         const isExisting = players.some(p => p.uid === currentUser.uid);
 
-        // ดักกรณีผู้เล่นใหม่เข้าผ่าน URL ตรงขณะที่ห้องเต็ม 20 คน
         if (!isExisting && currentUser.role !== 'admin' && players.length >= 20) {
           alert("⛔ ห้องนี้มีผู้เล่นเต็ม 20 คนแล้ว กรุณารอจบเกม");
           leaveRoom();
           return;
         }
 
-        // เพิ่มข้อมูลลงใน Firestore
         await roomDoc.collection('players').doc(currentUser.uid).set({
           uid: currentUser.uid,
           name: currentUser.name,
@@ -171,14 +171,14 @@
     }
     joinRoom();
 
-    // ฟังสถานะห้อง (หาก Admin สั่งเล่น จะย้ายไปหน้าเกมพร้อมกัน)
+    // ฟังสถานะห้อง
     roomDoc.onSnapshot(doc => {
       if (doc.exists && doc.data().status === 'playing') {
         window.location.href = "game.html";
       }
     });
 
-    // ฟังรายชื่อผู้เล่นและสถานะไฟ Realtime
+    // ฟังรายชื่อและไฟสถานะ
     roomDoc.collection('players').onSnapshot(snapshot => {
       const container = document.getElementById('playerList');
       const counter = document.getElementById('playerCounter');
@@ -197,7 +197,6 @@
           isSelf ? 'border-sky-500/50 bg-neutral-950' : 'border-neutral-800 bg-neutral-950/60'
         }`;
 
-        // ไฟเขียว/เหลือง
         const statusColor = p.isReady ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-amber-400 shadow-[0_0_8px_#f59e0b]';
         const statusText = p.isReady ? 'พร้อมแล้ว' : 'กำลังเตรียมตัว';
 
@@ -238,7 +237,7 @@
       }
     }
 
-    // แชทสด
+    // แชท
     roomDoc.collection('chat').orderBy('time', 'asc').limitToLast(50).onSnapshot(snapshot => {
       const box = document.getElementById('chatBox');
       box.innerHTML = '';
@@ -279,7 +278,7 @@
       }
     }
 
-    // แอดมินรีเซ็ตห้องเพื่อเปิดรับรอบใหม่
+    // ล้างห้อง
     async function resetRoomForNewGame() {
       if (!confirm("คุณต้องการล้างห้องและเริ่มรอบใหม่ใช่หรือไม่? ผู้เล่นเดิมจะถูกนำออกจากห้อง")) return;
       
@@ -292,12 +291,21 @@
       alert("รีเซ็ตห้องเรียบร้อย เปิดรับผู้เล่น 20 คนใหม่แล้ว");
     }
 
+    // ออกจากห้องแล้วกลับไปหน้า Login
     async function leaveRoom() {
       try {
-        await roomDoc.collection('players').doc(currentUser.uid).delete();
-      } catch (e) {}
-      localStorage.removeItem('gameUser');
-      window.location.href = "index.html";
+        if (currentUser && currentUser.uid) {
+          await roomDoc.collection('players').doc(currentUser.uid).delete();
+        }
+        if (firebase.auth().currentUser) {
+          await firebase.auth().signOut();
+        }
+      } catch (e) {
+        console.error("Error leaving room:", e);
+      } finally {
+        localStorage.removeItem('gameUser');
+        window.location.href = "index.html";
+      }
     }
   </script>
 </body>
