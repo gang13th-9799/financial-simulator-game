@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สรุปผลการเล่นเกม - Financial Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap');
+    body { font-family: 'Kanit', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: #262626; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-black text-white min-h-screen flex flex-col justify-between items-center relative p-4 md:p-6 select-none">
+
+  <!-- แสงไฟนีออนพื้นหลังตกแต่ง -->
+  <div class="absolute -top-40 -left-40 w-96 h-96 bg-red-600/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-sky-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+  <!-- Header -->
+  <header class="w-full max-w-3xl pt-4 pb-2 text-center z-10">
+    <div class="w-16 h-16 rounded-full bg-red-600/20 border border-red-500/50 flex items-center justify-center text-3xl mx-auto mb-3 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+      🏁
+    </div>
+    <h1 class="text-2xl md:text-3xl font-black tracking-wider text-white">
+      สรุปผลการเล่นเกม <span class="text-red-500">FINANCIAL</span> <span class="text-sky-400">SIMULATOR</span>
+    </h1>
+    <p class="text-xs text-neutral-400 mt-1">เกมสิ้นสุดลงแล้ว โดยผู้ดูแลระบบ (Admin) ได้สั่งจบเกม</p>
+  </header>
+
+  <!-- กล่องแสดงเนื้อหาสรุปผล -->
+  <main class="w-full max-w-3xl my-4 z-10">
+    <div class="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-md space-y-6">
+      
+      <!-- ข้อมูลผู้เล่นและห้อง -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 border-b border-neutral-800 gap-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 id="sumPlayerName" class="text-xl font-bold text-white">ผู้เล่น</h2>
+            <span id="sumPlayerCareer" class="text-xs bg-sky-500/20 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded font-mono">-</span>
+          </div>
+          <div class="text-xs text-neutral-400 mt-0.5 flex gap-2">
+            <span>ห้อง: <b id="sumRoomId" class="text-white font-mono">----</b></span>
+            <span>|</span>
+            <span id="sumResultBadge" class="font-bold">-</span>
+          </div>
+        </div>
+        <div class="text-left sm:text-right font-mono text-xs text-neutral-400">
+          <div>เวลาในเกมจำลอง: <b id="sumGameYear" class="text-amber-400">-</b></div>
+        </div>
+      </div>
+
+      <!-- แดชบอร์ดสรุปตัวเลขทางการเงิน 4 กล่อง -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
+        <div class="bg-neutral-950 p-4 rounded-2xl border border-neutral-800">
+          <span class="text-[11px] text-neutral-400 block font-sans mb-1">เงินสดสะสม</span>
+          <b id="sumCash" class="text-lg md:text-xl text-emerald-400">฿0</b>
+        </div>
+        <div class="bg-neutral-950 p-4 rounded-2xl border border-neutral-800">
+          <span class="text-[11px] text-neutral-400 block font-sans mb-1">Passive Income/ด.</span>
+          <b id="sumPassive" class="text-lg md:text-xl text-sky-400">฿0</b>
+        </div>
+        <div class="bg-neutral-950 p-4 rounded-2xl border border-neutral-800">
+          <span class="text-[11px] text-neutral-400 block font-sans mb-1">Active Income/ด.</span>
+          <b id="sumActive" class="text-lg md:text-xl text-white">฿0</b>
+        </div>
+        <div class="bg-neutral-950 p-4 rounded-2xl border border-neutral-800">
+          <span class="text-[11px] text-neutral-400 block font-sans mb-1">รายจ่ายประจำ/ด.</span>
+          <b id="sumExpense" class="text-lg md:text-xl text-red-500">฿0</b>
+        </div>
+      </div>
+
+      <!-- สรุปพอร์ตสินทรัพย์จากทุก Tab -->
+      <div class="bg-neutral-950 rounded-2xl p-5 border border-neutral-800 space-y-3 text-xs md:text-sm text-neutral-300">
+        <h3 class="font-bold text-white text-sm pb-2 border-b border-neutral-800 flex items-center gap-1.5">
+          <span>📊</span> สถานะสินทรัพย์และการลงทุนทั้งหมด
+        </h3>
+        
+        <div class="flex justify-between py-1 border-b border-neutral-800/60">
+          <span class="text-neutral-400">📈 บัญชี Stock / Crypto (Tab 2):</span>
+          <b id="sumStock" class="text-white font-mono">ยังไม่เปิดบัญชี</b>
+        </div>
+        
+        <div class="flex justify-between py-1 border-b border-neutral-800/60">
+          <span class="text-neutral-400">🏢 อสังหาริมทรัพย์ (Tab 3):</span>
+          <b id="sumRE" class="text-white font-mono">0 รายการ</b>
+        </div>
+        
+        <div class="flex justify-between py-1 border-b border-neutral-800/60">
+          <span class="text-neutral-400">🏪 ธุรกิจทั่วไป (Tab 4):</span>
+          <b id="sumBiz" class="text-white font-mono">0 กิจการ</b>
+        </div>
+        
+        <div class="flex justify-between py-1">
+          <span class="text-neutral-400">💎 ธุรกิจเครือข่าย (Tab 5):</span>
+          <b id="sumNetwork" class="text-sky-400 font-bold">ยังไม่สมัคร</b>
+        </div>
+      </div>
+
+      <!-- คำแนะนำและบทเรียนทางการเงิน -->
+      <div id="sumLessonBox" class="p-4 rounded-2xl border text-xs leading-relaxed">
+        <!-- แสดงข้อความสรุปประเมินตามเกณฑ์ -->
+      </div>
+
+      <!-- ปุ่มดำเนินการ จบเกมและกลับไปหน้า Login -->
+      <div class="pt-2">
+        <button onclick="handleEndGameAndExit()" 
+                class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-red-600/30 text-sm md:text-base flex items-center justify-center gap-2">
+          <span>จบเกมและกลับสู่หน้า Login</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="w-full py-4 text-center text-xs text-neutral-600 z-10">
+    Financial Simulator Game © หน้าสรุปผลการเล่น
+  </footer>
+
+  <script>
+    // ดึงข้อมูลสรุปผลล่าสุดที่ส่งมาจาก game.html
+    const gameSummaryData = JSON.parse(localStorage.getItem('gameSummaryData')) || {
+      playerName: "ผู้เล่น",
+      playerCareer: "อาชีพ 1",
+      roomId: "0000",
+      cash: 100000,
+      salary: 35000,
+      passiveIncome: 0,
+      totalExpense: 23000,
+      stockStatus: "ยังไม่เปิดบัญชี",
+      realEstatesCount: 0,
+      businessesCount: 0,
+      networkRank: "ยังไม่สมัคร",
+      gameTimelineText: "ปี 2000"
+    };
+
+    function renderSummary() {
+      document.getElementById('sumPlayerName').innerText = gameSummaryData.playerName;
+      document.getElementById('sumPlayerCareer').innerText = gameSummaryData.playerCareer;
+      document.getElementById('sumRoomId').innerText = gameSummaryData.roomId;
+      document.getElementById('sumGameYear').innerText = gameSummaryData.gameTimelineText;
+
+      document.getElementById('sumCash').innerText = `฿${gameSummaryData.cash.toLocaleString()}`;
+      document.getElementById('sumPassive').innerText = `+฿${gameSummaryData.passiveIncome.toLocaleString()}`;
+      document.getElementById('sumActive').innerText = `฿${gameSummaryData.salary.toLocaleString()}`;
+      document.getElementById('sumExpense').innerText = `฿${gameSummaryData.totalExpense.toLocaleString()}`;
+
+      document.getElementById('sumStock').innerText = gameSummaryData.stockStatus;
+      document.getElementById('sumRE').innerText = `${gameSummaryData.realEstatesCount} รายการ`;
+      document.getElementById('sumBiz').innerText = `${gameSummaryData.businessesCount} กิจการ`;
+      document.getElementById('sumNetwork').innerText = gameSummaryData.networkRank;
+
+      // ตรวจสอบว่าบรรลุอิสรภาพทางการเงินหรือไม่ (Passive > Expense)
+      const badge = document.getElementById('sumResultBadge');
+      const lessonBox = document.getElementById('sumLessonBox');
+
+      if (gameSummaryData.passiveIncome > gameSummaryData.totalExpense) {
+        badge.innerText = "🏆 บรรลุอิสรภาพทางการเงิน (ชนะเกม)";
+        badge.className = "text-emerald-400 font-bold";
+        lessonBox.className = "p-4 rounded-2xl border border-emerald-500/40 bg-emerald-950/20 text-xs leading-relaxed text-emerald-300";
+        lessonBox.innerHTML = `
+          <b class="text-emerald-400 block mb-1">🎉 ยินดีด้วยอย่างยิ่ง!</b>
+          คุณสามารถสร้าง Passive Income (+฿${gameSummaryData.passiveIncome.toLocaleString()}) ได้มากกว่ารายจ่ายรวมทั้งหมด (฿${gameSummaryData.totalExpense.toLocaleString()}) ส่งผลให้กระแสเงินสดของคุณเป็นบวกอย่างยั่งยืนโดยไม่ต้องพึ่งพารายได้จากการทำงานอีกต่อไป!
+        `;
+      } else {
+        badge.innerText = "⏳ ยังไม่บรรลุอิสรภาพทางการเงิน";
+        badge.className = "text-amber-400 font-bold";
+        lessonBox.className = "p-4 rounded-2xl border border-neutral-800 bg-neutral-950 text-xs leading-relaxed text-neutral-400";
+        lessonBox.innerHTML = `
+          <b class="text-white block mb-1">💡 สรุปการเรียนรู้:</b>
+          ในรอบนี้ Passive Income ของคุณยังน้อยกว่ารายจ่ายรวม ลองมุ่งเน้นการสร้างสายงานธุรกิจเครือข่าย หรือสะสมทรัพย์สินที่สร้างกระแสเงินสดต่อเนื่องในรอบการเล่นถัดไป!
+        `;
+      }
+    }
+
+    // ฟังก์ชันจบเกมและออกจากระบบ
+    function handleEndGameAndExit() {
+      // ล้างข้อมูล Session การเล่นของรอบนี้
+      localStorage.removeItem('gameUser');
+      localStorage.removeItem('gameSummaryData');
+      window.location.href = "index.html";
+    }
+
+    window.addEventListener('DOMContentLoaded', renderSummary);
+  </script>
+</body>
+</html>
