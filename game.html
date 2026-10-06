@@ -15,14 +15,14 @@
 </head>
 <body class="bg-black text-white min-h-screen flex flex-col justify-between select-none">
 
-  <!-- ==================== 1. HEADER BAR ==================== -->
-  <header class="w-full bg-neutral-950 border-b border-neutral-800 px-4 md:px-8 py-3.5 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md bg-neutral-950/90">
+  <!-- ==================== HEADER BAR ==================== -->
+  <header class="w-full bg-neutral-950 border-b border-neutral-800 px-4 md:px-8 py-3 flex justify-between items-center sticky top-0 z-40 backdrop-blur-md bg-neutral-950/90">
     
-    <!-- มุมซ้าย: ไอคอนรูปคน (คลิกดูโปรไฟล์ผู้เล่น) -->
+    <!-- มุมซ้าย: โปรไฟล์ผู้เล่น & เวลาในเกม -->
     <div class="flex items-center gap-3">
       <button onclick="openProfileModal()" 
-              title="ดูโปรไฟล์และข้อมูลการเงินส่วนตัว"
-              class="w-10 h-10 rounded-full bg-neutral-900 border border-sky-500/50 hover:border-sky-400 hover:bg-neutral-800 flex items-center justify-center text-sky-400 transition-all shadow-[0_0_10px_rgba(56,189,248,0.2)]">
+              title="ดูโปรไฟล์และข้อมูลส่วนตัว"
+              class="w-10 h-10 rounded-full bg-neutral-900 border border-sky-500/50 hover:border-sky-400 flex items-center justify-center text-sky-400 transition-all shadow-md">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"></path>
         </svg>
@@ -32,53 +32,142 @@
         <div class="flex items-center gap-2">
           <span id="headerPlayerName" class="font-bold text-sm md:text-base text-white">กำลังโหลด...</span>
           <span id="headerPlayerCareer" class="text-[11px] bg-neutral-800 text-sky-400 px-2 py-0.5 rounded border border-sky-500/30">-</span>
+          <span id="headerAdminBadge" class="hidden text-[10px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded">GM 🥸</span>
         </div>
-        <div class="text-xs text-neutral-400 flex items-center gap-2 mt-0.5">
-          <span>ห้อง: <b id="headerRoomId" class="text-white font-mono">----</b></span>
+        <div class="text-xs text-neutral-400 flex flex-wrap items-center gap-2 mt-0.5 font-mono">
+          <span>ห้อง: <b id="headerRoomId" class="text-white">----</b></span>
           <span class="text-neutral-600">|</span>
-          <span>เงินสด: <b id="headerCash" class="text-emerald-400 font-mono">฿0</b></span>
+          <span>เงินสด: <b id="headerCash" class="text-emerald-400">฿0</b></span>
+          <span class="text-neutral-600">|</span>
+          <span class="text-amber-400">⏳ ปีจำลอง: <b id="gameTimelineDisplay">กำลังสุ่มปี...</b></span>
         </div>
       </div>
     </div>
 
-    <!-- มุมขวาบน: ชื่อเกม -->
+    <!-- มุมขวา: ชื่อเกม -->
     <div class="text-right">
-      <h1 class="text-base md:text-xl font-extrabold tracking-wider">
-        FINANCIAL <span class="text-red-500">SIMULATOR</span> <span class="text-sky-400 text-xs md:text-sm font-semibold block md:inline">GAME</span>
+      <h1 class="text-sm md:text-lg font-extrabold tracking-wider">
+        FINANCIAL <span class="text-red-500">SIMULATOR</span> <span class="text-sky-400 text-xs font-semibold block md:inline">GAME</span>
       </h1>
-      <span class="text-[10px] text-neutral-500 font-mono tracking-widest hidden md:inline">MAIN CONTROL INTERFACE</span>
+      <span class="text-[10px] text-neutral-500 font-mono tracking-widest block">5 วินาที = 1 วันในเกม</span>
     </div>
   </header>
 
-  <!-- ==================== 2. NAVIGATION TABS (5 แท็บหลัก) ==================== -->
+  <!-- ==================== NAVIGATION TABS ==================== -->
   <div class="w-full bg-neutral-950/80 border-b border-neutral-800 px-4 md:px-8">
-    <nav class="max-w-7xl mx-auto flex space-x-2 md:space-x-4 overflow-x-auto py-2 text-sm">
-      <button onclick="switchTab('careerTab')" id="btn-careerTab" class="tab-btn px-4 py-2 rounded-xl font-semibold transition-all border border-transparent text-neutral-400 hover:text-white flex items-center gap-2">
-        <span>💼</span> 1. ข้อมูลอาชีพในเกม
+    <nav class="max-w-7xl mx-auto flex space-x-2 md:space-x-3 overflow-x-auto py-2 text-xs md:text-sm">
+      
+      <!-- Tab Admin (แสดงเฉพาะ Admin) -->
+      <button onclick="switchTab('adminTab')" id="btn-adminTab" class="tab-btn hidden px-3.5 py-2 rounded-xl font-semibold border border-red-500/40 text-red-400 hover:text-white bg-red-950/20 flex items-center gap-1.5 whitespace-nowrap">
+        <span>🥸</span> รายชื่อผู้เล่น (Admin)
       </button>
-      <button onclick="switchTab('stockTab')" id="btn-stockTab" class="tab-btn px-4 py-2 rounded-xl font-semibold transition-all border border-transparent text-neutral-400 hover:text-white flex items-center gap-2">
-        <span>📈</span> 2. Stock
+
+      <button onclick="switchTab('careerTab')" id="btn-careerTab" class="tab-btn px-3.5 py-2 rounded-xl font-semibold border border-transparent text-neutral-400 hover:text-white flex items-center gap-1.5 whitespace-nowrap">
+        <span>💼</span> 1. ข้อมูลอาชีพ
       </button>
-      <button onclick="switchTab('realEstateTab')" id="btn-realEstateTab" class="tab-btn px-4 py-2 rounded-xl font-semibold transition-all border border-transparent text-neutral-400 hover:text-white flex items-center gap-2">
+      <button onclick="switchTab('stockTab')" id="btn-stockTab" class="tab-btn px-3.5 py-2 rounded-xl font-semibold border border-transparent text-neutral-400 hover:text-white flex items-center gap-1.5 whitespace-nowrap">
+        <span>📈</span> 2. Stock / Crypto
+      </button>
+      <button onclick="switchTab('realEstateTab')" id="btn-realEstateTab" class="tab-btn px-3.5 py-2 rounded-xl font-semibold border border-transparent text-neutral-400 hover:text-white flex items-center gap-1.5 whitespace-nowrap">
         <span>🏢</span> 3. อสังหา
       </button>
-      <button onclick="switchTab('businessTab')" id="btn-businessTab" class="tab-btn px-4 py-2 rounded-xl font-semibold transition-all border border-transparent text-neutral-400 hover:text-white flex items-center gap-2">
+      <button onclick="switchTab('businessTab')" id="btn-businessTab" class="tab-btn px-3.5 py-2 rounded-xl font-semibold border border-transparent text-neutral-400 hover:text-white flex items-center gap-1.5 whitespace-nowrap">
         <span>🏪</span> 4. ธุรกิจทั่วไป
       </button>
-      <button onclick="switchTab('networkTab')" id="btn-networkTab" class="tab-btn px-4 py-2 rounded-xl font-semibold transition-all border border-transparent text-neutral-400 hover:text-white flex items-center gap-2">
+      <button onclick="switchTab('networkTab')" id="btn-networkTab" class="tab-btn px-3.5 py-2 rounded-xl font-semibold border border-transparent text-neutral-400 hover:text-white flex items-center gap-1.5 whitespace-nowrap">
         <span>💎</span> 5. ธุรกิจเครือข่าย
       </button>
     </nav>
   </div>
 
-  <!-- ==================== 3. CONTENT AREA ==================== -->
+  <!-- ==================== MAIN CONTENT ==================== -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
 
-    <!-- ========== TAB 1: ข้อมูลอาชีพในเกม (Active & Passive Income) ========== -->
+    <!-- ========== TAB ADMIN: ตรวจสอบข้อมูลผู้เล่นทุกคน ========== -->
+    <section id="adminTab" class="tab-content hidden space-y-6">
+      <div class="flex justify-between items-center pb-3 border-b border-neutral-800">
+        <div>
+          <h3 class="text-xl font-bold text-red-500 flex items-center gap-2">
+            <span>🥸</span> ศูนย์ควบคุม Admin : ข้อมูลผู้เล่นแบบ Realtime
+          </h3>
+          <p class="text-xs text-neutral-400 mt-0.5">Admin สามารถกดดูสถานะทางการเงินและสินทรัพย์ของผู้เล่นทุกคนได้</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- รายชื่อผู้เล่นในห้อง -->
+        <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-lg">
+          <h4 class="font-bold text-white text-sm mb-3 pb-2 border-b border-neutral-800 flex justify-between">
+            <span>เลือกผู้เล่น</span>
+            <span id="adminPlayerListCounter" class="text-xs text-sky-400 font-mono">0 คน</span>
+          </h4>
+          <div id="adminPlayerListContainer" class="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+            <!-- ผู้เล่นจะแสดงที่นี่ -->
+          </div>
+        </div>
+
+        <!-- รายละเอียดของผู้เล่นที่เลือก -->
+        <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 shadow-lg lg:col-span-2">
+          <div id="adminSelectedPlayerEmpty" class="text-center py-20 text-neutral-500 text-sm">
+            👈 กรุณาคลิกเลือกชื่อผู้เล่นจากแถบด้านซ้าย เพื่อตรวจสอบข้อมูลเชิงลึก
+          </div>
+          <div id="adminSelectedPlayerDetail" class="hidden space-y-5">
+            <div class="flex justify-between items-start pb-4 border-b border-neutral-800">
+              <div>
+                <h4 id="adminViewName" class="text-xl font-black text-white">...</h4>
+                <div class="flex items-center gap-2 text-xs text-neutral-400 mt-1">
+                  <span>อาชีพ: <b id="adminViewCareer" class="text-sky-400">-</b></span>
+                  <span>|</span>
+                  <span>เบอร์โทร: <b id="adminViewPhone" class="text-white">-</b></span>
+                </div>
+              </div>
+              <span id="adminViewRole" class="text-xs bg-sky-500/20 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded">Player</span>
+            </div>
+
+            <!-- กล่องสรุปการเงิน -->
+            <div class="grid grid-cols-3 gap-3 font-mono text-center">
+              <div class="bg-neutral-950 p-3 rounded-xl border border-neutral-800">
+                <span class="text-[10px] text-neutral-400 block">เงินสดคงเหลือ</span>
+                <span id="adminViewCash" class="text-base font-bold text-emerald-400">฿0</span>
+              </div>
+              <div class="bg-neutral-950 p-3 rounded-xl border border-neutral-800">
+                <span class="text-[10px] text-neutral-400 block">Passive Income</span>
+                <span id="adminViewPassive" class="text-base font-bold text-sky-400">฿0</span>
+              </div>
+              <div class="bg-neutral-950 p-3 rounded-xl border border-neutral-800">
+                <span class="text-[10px] text-neutral-400 block">รายจ่ายรวม</span>
+                <span id="adminViewExpense" class="text-base font-bold text-red-500">฿0</span>
+              </div>
+            </div>
+
+            <!-- รายการสินทรัพย์ของผู้เล่นที่เลือก -->
+            <div class="space-y-2 text-xs text-neutral-300">
+              <div class="p-3 bg-neutral-950 rounded-xl border border-neutral-800 flex justify-between">
+                <span>บัญชี Stock / Crypto:</span>
+                <b id="adminViewStockStatus" class="text-neutral-400">ยังไม่เปิดบัญชี</b>
+              </div>
+              <div class="p-3 bg-neutral-950 rounded-xl border border-neutral-800 flex justify-between">
+                <span>อสังหาริมทรัพย์ที่ครอบครอง:</span>
+                <b id="adminViewRECount" class="text-neutral-400">0 รายการ</b>
+              </div>
+              <div class="p-3 bg-neutral-950 rounded-xl border border-neutral-800 flex justify-between">
+                <span>ธุรกิจทั่วไปที่ครอบครอง:</span>
+                <b id="adminViewBizCount" class="text-neutral-400">0 รายการ</b>
+              </div>
+              <div class="p-3 bg-neutral-950 rounded-xl border border-neutral-800 flex justify-between">
+                <span>ระดับตำแหน่งธุรกิจเครือข่าย:</span>
+                <b id="adminViewNetworkRank" class="text-neutral-400">ยังไม่สมัคร</b>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TAB 1: ข้อมูลอาชีพในเกม ========== -->
     <section id="careerTab" class="tab-content space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <!-- รายได้ประจำเดือน -->
         <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 shadow-lg">
           <div class="flex items-center justify-between pb-3 border-b border-neutral-800 mb-4">
             <h3 class="font-bold text-white flex items-center gap-2">
@@ -86,23 +175,22 @@
             </h3>
             <span class="text-xs text-sky-400 font-mono">Monthly Income</span>
           </div>
-          <div class="space-y-3 text-sm">
+          <div class="space-y-3 text-sm font-mono">
             <div class="flex justify-between text-neutral-300">
-              <span>เงินเดือน (Active):</span>
-              <span id="careerSalary" class="font-mono font-bold text-white">฿35,000</span>
+              <span class="font-sans">เงินเดือน (Active):</span>
+              <span id="careerSalary" class="font-bold text-white">฿35,000</span>
             </div>
             <div class="flex justify-between text-neutral-300">
-              <span>กระแสเงินสด (Passive):</span>
-              <span id="careerPassiveIncome" class="font-mono font-bold text-emerald-400">+฿0</span>
+              <span class="font-sans">กระแสเงินสด (Passive):</span>
+              <span id="careerPassiveIncome" class="font-bold text-emerald-400">+฿0</span>
             </div>
             <div class="pt-3 border-t border-neutral-800 flex justify-between font-bold text-base">
-              <span>รวมรายได้:</span>
-              <span id="careerTotalIncome" class="font-mono text-sky-400">฿35,000</span>
+              <span class="font-sans">รวมรายได้:</span>
+              <span id="careerTotalIncome" class="text-sky-400">฿35,000</span>
             </div>
           </div>
         </div>
 
-        <!-- รายจ่ายประจำเดือน -->
         <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 shadow-lg">
           <div class="flex items-center justify-between pb-3 border-b border-neutral-800 mb-4">
             <h3 class="font-bold text-white flex items-center gap-2">
@@ -110,23 +198,22 @@
             </h3>
             <span class="text-xs text-red-400 font-mono">Monthly Expense</span>
           </div>
-          <div class="space-y-3 text-sm">
+          <div class="space-y-3 text-sm font-mono">
             <div class="flex justify-between text-neutral-300">
-              <span>ค่าใช้จ่ายดำรงชีพ:</span>
-              <span id="careerLivingExpense" class="font-mono font-bold text-white">฿18,000</span>
+              <span class="font-sans">ค่าใช้จ่ายดำรงชีพ:</span>
+              <span id="careerLivingExpense" class="font-bold text-white">฿18,000</span>
             </div>
             <div class="flex justify-between text-neutral-300">
-              <span>ภาระผ่อนหนี้สิน:</span>
-              <span id="careerDebtExpense" class="font-mono font-bold text-red-400">฿5,000</span>
+              <span class="font-sans">ภาระผ่อนหนี้สิน:</span>
+              <span id="careerDebtExpense" class="font-bold text-red-400">฿5,000</span>
             </div>
             <div class="pt-3 border-t border-neutral-800 flex justify-between font-bold text-base">
-              <span>รวมรายจ่ายทั้งหมด:</span>
-              <span id="careerTotalExpense" class="font-mono text-red-500">฿23,000</span>
+              <span class="font-sans">รวมรายจ่ายทั้งหมด:</span>
+              <span id="careerTotalExpense" class="text-red-500">฿23,000</span>
             </div>
           </div>
         </div>
 
-        <!-- กระแสเงินสดคงเหลือสุทธิ (Cashflow) & แถบเป้าหมายการชนะเกม -->
         <div class="bg-neutral-900 border border-sky-500/40 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between pb-3 border-b border-neutral-800 mb-4">
@@ -138,7 +225,6 @@
               +฿12,000
             </div>
             
-            <!-- แถบแสดงความคืบหน้าสู่ชัยชนะ -->
             <div class="mt-4">
               <div class="flex justify-between text-xs text-neutral-400 mb-1">
                 <span>เป้าหมายชนะเกม (Passive > รายจ่าย):</span>
@@ -157,155 +243,187 @@
 
       </div>
 
-      <!-- รายละเอียดบทบาทอาชีพ -->
       <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
         <h4 class="font-bold text-white mb-2 text-base">คำอธิบายบทบาทและเงื่อนไขอาชีพ</h4>
         <p id="careerDescription" class="text-sm text-neutral-400 leading-relaxed">
-          กำลังเตรียมข้อมูลอาชีพในเกมสำหรับผู้เล่นแต่ละท่าน ข้อมูลนี้เชื่อมโยงกับบทบาทที่คุณได้เลือกไว้ก่อนเข้าห้อง
+          กำลังเตรียมข้อมูลบทบาทอาชีพ ข้อมูลนี้เชื่อมโยงกับบทบาทที่คุณได้เลือกไว้ก่อนเข้าห้อง
         </p>
       </div>
     </section>
 
-    <!-- ========== TAB 2: STOCK (ตลาดหุ้น) ========== -->
+    <!-- ========== TAB 2: STOCK / CRYPTO (ต้องปลดล็อค 30,000 บาท) ========== -->
     <section id="stockTab" class="tab-content hidden space-y-6">
-      <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-        <div class="flex justify-between items-center pb-4 border-b border-neutral-800 mb-4">
-          <div>
-            <h3 class="text-lg font-bold text-white flex items-center gap-2">
-              <span class="text-sky-400">📊</span> กระดานซื้อขายหุ้น (Stock Market)
-            </h3>
-            <p class="text-xs text-neutral-400 mt-0.5">ลงทุนเก็งกำไรในหุ้นที่มีความผันผวนตามสภาวะตลาด</p>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm">
-            <thead class="text-xs text-neutral-400 uppercase bg-neutral-950/70 border-b border-neutral-800">
-              <tr>
-                <th class="py-3 px-4">ชื่อย่อหุ้น</th>
-                <th class="py-3 px-4">หมวดธุรกิจ</th>
-                <th class="py-3 px-4 text-right">ราคาปัจจุบัน</th>
-                <th class="py-3 px-4 text-right">การถือครอง</th>
-                <th class="py-3 px-4 text-center">ดำเนินการ</th>
-              </tr>
-            </thead>
-            <tbody id="stockTableBody" class="divide-y divide-neutral-800 font-mono">
-              <!-- Render via JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ========== TAB 3: อสังหา (REAL ESTATE) ========== -->
-    <section id="realEstateTab" class="tab-content hidden space-y-6">
-      <div class="flex justify-between items-center mb-2">
-        <div>
-          <h3 class="text-lg font-bold text-white flex items-center gap-2">
-            <span class="text-sky-400">🏢</span> การลงทุนในอสังหาริมทรัพย์
-          </h3>
-          <p class="text-xs text-neutral-400 mt-0.5">สร้างรายได้แบบ Passive Income จากค่าเช่าอสังหาริมทรัพย์</p>
-        </div>
+      
+      <!-- หน้าจอล็อก (หากยังไม่ปลดล็อค 30,000) -->
+      <div id="stockLockedScreen" class="bg-neutral-900 border border-neutral-800 rounded-2xl p-10 text-center max-w-lg mx-auto shadow-2xl">
+        <div class="text-5xl mb-4">🔒</div>
+        <h3 class="text-xl font-bold text-white">คุณยังไม่มีบัญชีซื้อขาย Stock & Crypto</h3>
+        <p class="text-xs text-neutral-400 mt-2 mb-6 leading-relaxed">
+          ต้องจ่ายเงิน <b>30,000 บาท</b> เพื่อเปิดพอร์ตการลงทุน โดยเงินจำนวนนี้จะถูกนำเข้าสู่บัญชีพอร์ตเพื่อไว้ใช้ซื้อขายเก็งกำไรในตลาดทันที
+        </p>
+        <button onclick="unlockStockAccount()" class="w-full bg-sky-500 hover:bg-sky-400 text-black font-bold py-3 rounded-xl transition-all shadow-lg shadow-sky-500/20 text-sm">
+          ปลดล็อกบัญชีและฝากเงิน ฿30,000 ทันที
+        </button>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="realEstateContainer">
-        <!-- Render Real Estate Cards via JS -->
-      </div>
-    </section>
-
-    <!-- ========== TAB 4: ธุรกิจทั่วไป (GENERAL BUSINESS) ========== -->
-    <section id="businessTab" class="tab-content hidden space-y-6">
-      <div>
-        <h3 class="text-lg font-bold text-white flex items-center gap-2">
-          <span class="text-sky-400">🏪</span> โอกาสทางธุรกิจทั่วไป (Business SME)
-        </h3>
-        <p class="text-xs text-neutral-400 mt-0.5">ลงทุนเปิดกิจการ ขยายสาขา และบริหารกระแสเงินสดของกิจการ</p>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="businessContainer">
-        <!-- Render Business Cards via JS -->
-      </div>
-    </section>
-
-    <!-- ========== TAB 5: ธุรกิจเครือข่าย (อ้างอิงโมเดลแอมเวย์ ถึงระดับเพชร) ========== -->
-    <section id="networkTab" class="tab-content hidden space-y-6">
-      <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pb-4 border-b border-neutral-800">
-        <div>
-          <h3 class="text-xl font-bold text-white flex items-center gap-2">
-            <span class="text-sky-400">💎</span> ธุรกิจเครือข่าย (Network Marketing)
-          </h3>
-          <p class="text-xs text-neutral-400 mt-0.5">สร้างสายงาน ช่วยเหลือทีมงานให้เติบโต รับโบนัสลิขสิทธิ์ (Passive Income) สูงสุดถึงระดับเพชร</p>
-        </div>
-        <div class="bg-neutral-900 border border-neutral-800 px-4 py-2 rounded-xl text-right">
-          <span class="text-xs text-neutral-400 block">Passive Income เครือข่าย</span>
-          <span id="networkPassiveDisplay" class="font-mono font-bold text-emerald-400 text-lg">+฿0 /เดือน</span>
-        </div>
-      </div>
-
-      <!-- แดชบอร์ดสรุปตำแหน่งปัจจุบัน -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        <!-- ข้อมูลระดับเข็ม -->
-        <div class="bg-neutral-900 border border-sky-500/40 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
-          <div>
-            <span class="text-xs text-neutral-400 uppercase tracking-wider block mb-1">ระดับตำแหน่งปัจจุบัน</span>
-            <div id="pinRankTitle" class="text-2xl font-black text-sky-400 mb-2">Member</div>
-            <p id="pinRankDesc" class="text-xs text-neutral-400 leading-relaxed">เริ่มต้นสร้างเครือข่ายผู้ใช้สินค้าและขยายทีมงาน</p>
-          </div>
-          <div class="mt-4 pt-4 border-t border-neutral-800">
-            <span class="text-xs text-neutral-400">สายงานติดตัวที่สำเร็จ (Legs):</span>
-            <div id="activeLegsCount" class="text-xl font-mono font-bold text-white mt-0.5">0 / 6 สาย</div>
-          </div>
-        </div>
-
-        <!-- รายการอัปเกรด/สร้างสายงาน -->
-        <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 shadow-lg md:col-span-2 flex flex-col justify-between">
-          <div>
-            <h4 class="font-bold text-white text-sm mb-3 pb-2 border-b border-neutral-800 flex justify-between items-center">
-              <span>แผนผังขยายสายงาน (สู่ระดับเพชร 6 สายงาน)</span>
-              <span class="text-xs font-normal text-neutral-400">ต้นทุนสร้างสายงาน ฿20,000 / สาย</span>
-            </h4>
-            
-            <!-- สายงานทั้ง 6 สาย (Diamond Structure) -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="legsGridContainer">
-              <!-- Render 6 Legs via JS -->
+      <!-- หน้าจอกระดานเทรด (แสดงเมื่อปลดล็อกแล้ว) -->
+      <div id="stockUnlockedScreen" class="hidden space-y-6">
+        <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pb-4 border-b border-neutral-800 mb-4">
+            <div>
+              <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <span class="text-sky-400">📊</span> กระดานซื้อขายจำลอง (Stock & Crypto)
+              </h3>
+              <p class="text-xs text-neutral-400 mt-0.5">ข้อมูลราคาอ้างอิงย้อนหลังตามช่วงปีที่สุ่มได้</p>
+            </div>
+            <div class="bg-neutral-950 border border-neutral-800 px-4 py-2 rounded-xl text-right font-mono">
+              <span class="text-[11px] text-neutral-400 block font-sans">ยอดเงินในพอร์ตเทรด:</span>
+              <span id="stockTradingCash" class="font-bold text-emerald-400 text-base">฿30,000</span>
             </div>
           </div>
 
-          <div class="mt-5 flex gap-3">
-            <button onclick="developNextLeg()" id="btnDevelopLeg" 
-                    class="w-full bg-sky-500 hover:bg-sky-400 text-black font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-sky-500/20 text-sm">
-              🚀 พัฒนาสายงานใหม่ (+1 สาย Platinum / ใช้เงินสด ฿20,000)
-            </button>
+          <div class="p-8 text-center bg-neutral-950/60 rounded-xl border border-neutral-800/80">
+            <span class="text-3xl block mb-2">📡</span>
+            <p class="text-sm font-semibold text-neutral-300">ระบบจำลองกระดานหุ้นและคริปโต (รออัพเดทข้อมูลราคาประวัติศาสตร์)</p>
+            <p class="text-xs text-neutral-500 mt-1">ระบบกำลังเตรียมจับคู่ข้อมูลราคาย้อนหลังตามช่วงปีจำลอง</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TAB 3: อสังหา (รอซื้อจากตลาดกลาง) ========== -->
+    <section id="realEstateTab" class="tab-content hidden space-y-6">
+      <div class="flex justify-between items-center pb-3 border-b border-neutral-800">
+        <div>
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <span class="text-sky-400">🏢</span> อสังหาริมทรัพย์ในการครอบครอง
+          </h3>
+          <p class="text-xs text-neutral-400 mt-0.5">สร้างกระแสเงินสด Passive Income รายเดือนจากการปล่อยเช่า</p>
+        </div>
+        <button onclick="alert('ระบบตลาดกลางอสังหาริมทรัพย์ (รออัพเดท)')" class="bg-sky-500 hover:bg-sky-400 text-black text-xs font-bold px-3 py-2 rounded-xl transition-all">
+          🏪 เข้าสู่ตลาดกลางอสังหา
+        </button>
+      </div>
+
+      <!-- สถานะเริ่มต้น: ไม่มีอสังหา -->
+      <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-10 text-center">
+        <span class="text-4xl block mb-2">🏚️</span>
+        <h4 class="font-bold text-white text-base">คุณยังไม่มีการครอบครองอสังหาริมทรัพย์ใดๆ</h4>
+        <p class="text-xs text-neutral-400 mt-1">สามารถเข้าซื้ออสังหาริมทรัพย์ได้จาก "ตลาดกลาง" เมื่อมีข้อเสนอเข้ามาในเกม</p>
+      </div>
+    </section>
+
+    <!-- ========== TAB 4: ธุรกิจทั่วไป (รอซื้อจากตลาดกลาง) ========== -->
+    <section id="businessTab" class="tab-content hidden space-y-6">
+      <div class="flex justify-between items-center pb-3 border-b border-neutral-800">
+        <div>
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <span class="text-sky-400">🏪</span> กิจการและธุรกิจทั่วไปในการครอบครอง
+          </h3>
+          <p class="text-xs text-neutral-400 mt-0.5">ลงทุนซื้อกิจการเพื่อรับส่วนแบ่งกำไรสุทธิรายเดือน</p>
+        </div>
+        <button onclick="alert('ระบบตลาดกลางธุรกิจ (รออัพเดท)')" class="bg-sky-500 hover:bg-sky-400 text-black text-xs font-bold px-3 py-2 rounded-xl transition-all">
+          🏪 เข้าสู่ตลาดกลางธุรกิจ
+        </button>
+      </div>
+
+      <!-- สถานะเริ่มต้น: ไม่มีธุรกิจ -->
+      <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-10 text-center">
+        <span class="text-4xl block mb-2">🏬</span>
+        <h4 class="font-bold text-white text-base">คุณยังไม่มีธุรกิจในการครอบครอง</h4>
+        <p class="text-xs text-neutral-400 mt-1">สามารถเลือกลงทุนซื้อกิจการได้จาก "ตลาดกลาง" (รออัพเดท)</p>
+      </div>
+    </section>
+
+    <!-- ========== TAB 5: ธุรกิจเครือข่าย (ค่าสมัคร 900 / ต่ออายุ 450 ต่อปี) ========== -->
+    <section id="networkTab" class="tab-content hidden space-y-6">
+      
+      <!-- หน้าจอล็อก (หากยังไม่สมัคร 900 บาท) -->
+      <div id="networkLockedScreen" class="bg-neutral-900 border border-neutral-800 rounded-2xl p-10 text-center max-w-lg mx-auto shadow-2xl">
+        <div class="text-5xl mb-4">💎</div>
+        <h3 class="text-xl font-bold text-white">สมัครเข้าร่วมธุรกิจเครือข่าย</h3>
+        <p class="text-xs text-neutral-400 mt-2 mb-6 leading-relaxed">
+          จ่ายค่าสมัครเริ่มต้น <b>900 บาท</b> เพื่อรับลิขสิทธิ์แฟรนไชส์ขยายสายงานสู่ระดับเพชร<br>
+          <span class="text-red-400 text-[11px] block mt-1">* มีค่าต่ออายุสมาชิกปีละ 450 บาท (คำนวณตามเวลาในเกม)</span>
+        </p>
+        <button onclick="registerNetworkBusiness()" class="w-full bg-sky-500 hover:bg-sky-400 text-black font-bold py-3 rounded-xl transition-all shadow-lg shadow-sky-500/20 text-sm">
+          จ่ายค่าสมัคร ฿900 และเริ่มต้นธุรกิจ
+        </button>
+      </div>
+
+      <!-- หน้าจอธุรกิจเครือข่าย (แสดงเมื่อสมัครแล้ว) -->
+      <div id="networkUnlockedScreen" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pb-4 border-b border-neutral-800">
+          <div>
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+              <span class="text-sky-400">💎</span> แผนผังธุรกิจเครือข่าย (สู่ระดับเพชร)
+            </h3>
+            <p class="text-xs text-neutral-400 mt-0.5">ต่ออายุสมาชิกทุก 1 ปี (360 วันในเกม) : ครั้งละ ฿450</p>
+          </div>
+          <div class="bg-neutral-900 border border-neutral-800 px-4 py-2 rounded-xl text-right">
+            <span class="text-xs text-neutral-400 block">Passive Income เครือข่าย</span>
+            <span id="networkPassiveDisplay" class="font-mono font-bold text-emerald-400 text-lg">+฿0 /เดือน</span>
           </div>
         </div>
 
-      </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-neutral-900 border border-sky-500/40 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+            <div>
+              <span class="text-xs text-neutral-400 uppercase tracking-wider block mb-1">ระดับตำแหน่งปัจจุบัน</span>
+              <div id="pinRankTitle" class="text-2xl font-black text-sky-400 mb-2">Member</div>
+              <p id="pinRankDesc" class="text-xs text-neutral-400 leading-relaxed">เริ่มต้นสร้างเครือข่ายผู้ใช้สินค้าและขยายทีมงาน</p>
+            </div>
+            <div class="mt-4 pt-4 border-t border-neutral-800">
+              <span class="text-xs text-neutral-400">สายงานติดตัวที่สำเร็จ (Legs):</span>
+              <div id="activeLegsCount" class="text-xl font-mono font-bold text-white mt-0.5">0 / 6 สาย</div>
+            </div>
+          </div>
 
-      <!-- ตารางเกณฑ์ระดับตำแหน่งและค่าลิขสิทธิ์ -->
-      <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
-        <h4 class="font-bold text-white text-sm mb-3">เส้นทางเกียรติคุณและผลตอบแทนลิขสิทธิ์รายเดือน</h4>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs text-neutral-300">
-            <thead class="bg-neutral-950 text-neutral-400 uppercase font-mono border-b border-neutral-800">
-              <tr>
-                <th class="py-2.5 px-3">ระดับเกียรติคุณ</th>
-                <th class="py-2.5 px-3">เงื่อนไขสายงาน (Platinum)</th>
-                <th class="py-2.5 px-3 text-right">ค่าลิขสิทธิ์รายเดือน (Passive)</th>
-                <th class="py-2.5 px-3 text-center">สถานะ</th>
-              </tr>
-            </thead>
-            <tbody id="networkRankTable" class="divide-y divide-neutral-800">
-              <!-- Render Ranks via JS -->
-            </tbody>
-          </table>
+          <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 shadow-lg md:col-span-2 flex flex-col justify-between">
+            <div>
+              <h4 class="font-bold text-white text-sm mb-3 pb-2 border-b border-neutral-800 flex justify-between items-center">
+                <span>แผนผัง 6 สายงานหลัก (สู่ระดับ Diamond)</span>
+                <span class="text-xs font-normal text-neutral-400">ต้นทุนพัฒนาสายงาน ฿20,000 / สาย</span>
+              </h4>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="legsGridContainer">
+                <!-- Render 6 Legs via JS -->
+              </div>
+            </div>
+
+            <div class="mt-5">
+              <button onclick="developNextLeg()" id="btnDevelopLeg" 
+                      class="w-full bg-sky-500 hover:bg-sky-400 text-black font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-sky-500/20 text-sm">
+                🚀 พัฒนาสายงานใหม่ (+1 สาย Platinum / ใช้เงินสด ฿20,000)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5">
+          <h4 class="font-bold text-white text-sm mb-3">เกณฑ์ระดับเกียรติคุณและค่าลิขสิทธิ์รายเดือน</h4>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-neutral-300">
+              <thead class="bg-neutral-950 text-neutral-400 uppercase font-mono border-b border-neutral-800">
+                <tr>
+                  <th class="py-2.5 px-3">ระดับเกียรติคุณ</th>
+                  <th class="py-2.5 px-3">เงื่อนไขสายงาน</th>
+                  <th class="py-2.5 px-3 text-right">ค่าลิขสิทธิ์/เดือน</th>
+                  <th class="py-2.5 px-3 text-center">สถานะ</th>
+                </tr>
+              </thead>
+              <tbody id="networkRankTable" class="divide-y divide-neutral-800">
+                <!-- Render via JS -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
 
   </main>
 
-  <!-- ==================== 4. MODAL ข้อมูลโปรไฟล์ผู้เล่น ==================== -->
+  <!-- ==================== MODALS ==================== -->
+  <!-- Profile Modal -->
   <div id="profileModal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden z-50">
     <div class="bg-neutral-900 border border-sky-500/50 rounded-2xl w-full max-w-md p-6 relative shadow-2xl">
       <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-neutral-400 hover:text-white text-lg">✕</button>
@@ -349,7 +467,7 @@
     </div>
   </div>
 
-  <!-- ==================== 5. MODAL ประกาศชัยชนะ (WIN MODAL) ==================== -->
+  <!-- Win Modal -->
   <div id="winModal" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 hidden z-50">
     <div class="bg-neutral-900 border-2 border-emerald-500 rounded-3xl w-full max-w-lg p-8 text-center relative shadow-[0_0_50px_rgba(16,185,129,0.3)]">
       <div class="text-6xl mb-3">🏆</div>
@@ -371,10 +489,6 @@
         </div>
       </div>
 
-      <p class="text-xs text-neutral-400 mb-6">
-        รายได้จากทรัพย์สินและระบบธุรกิจของคุณ สามารถครอบคลุมรายจ่ายทั้งหมดได้ตลอดชีพ โดยไม่ต้องพึ่งพาเงินเดือนจากการทำงานอีกต่อไป
-      </p>
-
       <button onclick="closeWinModal()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold py-3 rounded-xl transition-all shadow-lg text-sm">
         เล่นต่อเพื่อขยายพอร์ตความมั่งคั่ง
       </button>
@@ -382,11 +496,28 @@
   </div>
 
   <footer class="w-full py-3 bg-neutral-950 border-t border-neutral-900 text-center text-xs text-neutral-600">
-    Financial Simulator Game © หน้าหลักของเกม
+    Financial Simulator Game © ระบบเกมจำลองการเงินออนไลน์
   </footer>
 
-  <!-- ==================== 6. JAVASCRIPT ระบบเกมและการคำนวณ ==================== -->
+  <!-- Firebase Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <!-- ==================== GAME LOGIC SCRIPT ==================== -->
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAFzJ6nZGBwMmuqbAiFeIHOhoxigj-Bw2U",
+      authDomain: "family-fso.firebaseapp.com",
+      projectId: "family-fso",
+      storageBucket: "family-fso.firebasestorage.app",
+      messagingSenderId: "841262550099",
+      appId: "1:841262550099:web:b2348a193c9780faf40aa6",
+      measurementId: "G-CPWT56MLC3"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
     const currentUser = JSON.parse(localStorage.getItem('gameUser')) || {
       name: "ผู้เล่นทดสอบ",
       phone: "081-234-5678",
@@ -396,277 +527,202 @@
       roomId: "0000"
     };
 
-    // โครงสร้างระดับเกียรติคุณธุรกิจเครือข่าย (อ้างอิงแอมเวย์)
+    const roomId = currentUser.roomId || "0000";
+    const roomDoc = db.collection('rooms').doc(roomId);
+
+    // ระดับธุรกิจเครือข่าย
     const NETWORK_RANKS = [
       { name: "Member", reqLegs: 0, bonus: 0, desc: "เริ่มต้นศึกษาสินค้าและระบบ" },
       { name: "Bronze / Silver (6%-18%)", reqLegs: 0.5, bonus: 5000, desc: "เริ่มมีเครือข่ายผู้บริโภคขนาดย่อม" },
       { name: "Platinum (แพลตตินัม)", reqLegs: 1, bonus: 25000, desc: "มี 1 สายงานหลักที่มั่นคง" },
       { name: "Ruby (ทับทิม)", reqLegs: 2, bonus: 40000, desc: "ขยาย 2 สายงานพร้อมยอดธุรกิจกลุ่มสูง" },
       { name: "Pearl (มุก)", reqLegs: 3, bonus: 60000, desc: "สร้างผู้นำ 3 สายงานติดตัว" },
-      { name: "Emerald (มรกต)", reqLegs: 4, bonus: 100000, desc: "ช่วย 3-5 สายงานให้เป็น Platinum ต่อเนื่อง" },
+      { name: "Emerald (มรกต)", reqLegs: 4, bonus: 100000, desc: "ช่วย 3-5 สายงานให้เป็น Platinum" },
       { name: "Diamond (เพชร) 💎", reqLegs: 6, bonus: 250000, desc: "ช่วย 6 สายงานให้สำเร็จ บรรลุอิสรภาพสูงสุด" }
     ];
 
-    let hasWonGame = false;
-
-    // State ข้อมูลการเงินของผู้เล่น
+    // ข้อมูลสถานะเกมของผู้เล่นปัจจุบัน
     let gameState = {
       cash: 100000,
       salary: 35000,
       livingExpense: 18000,
       debtExpense: 5000,
-      qualifiedLegs: 0, // สายงาน Platinum ในเครือข่าย (สูงสุด 6)
-      stocks: [
-        { symbol: "TECH", name: "Tech Innovation Corp", category: "เทคโนโลยี", price: 120, owned: 100 },
-        { symbol: "ENERGY", name: "Green Power Assets", category: "พลังงาน", price: 45, owned: 0 },
-        { symbol: "FOOD", name: "Global FastFoods", category: "สินค้าบริโภค", price: 30, owned: 200 }
-      ],
-      realEstates: [
-        { id: 1, name: "คอนโดปล่อยเช่าใจกลางเมือง", downPayment: 80000, loan: 720000, cashflow: 4500, owned: false },
-        { id: 2, name: "ทาวน์โฮม 2 ชั้น ชานเมือง", downPayment: 150000, loan: 1350000, cashflow: 8500, owned: false },
-        { id: 3, name: "อาคารพาณิชย์ติดถนนใหญ่", downPayment: 400000, loan: 3600000, cashflow: 24000, owned: false }
-      ],
-      businesses: [
-        { id: 1, name: "ร้านกาแฟ Specialty แฟรนไชส์", cost: 120000, monthlyProfit: 9500, owned: false },
-        { id: 2, name: "ตู้จำหน่ายสินค้าอัตโนมัติ 3 จุด", cost: 60000, monthlyProfit: 4800, owned: false },
-        { id: 3, name: "คาร์แคร์ครบวงจร", cost: 350000, monthlyProfit: 28000, owned: false }
-      ]
+      stockUnlocked: false,
+      stockTradingBalance: 0,
+      networkRegistered: false,
+      qualifiedLegs: 0,
+      realEstates: [], // เริ่มต้นไม่มีการครอบครอง
+      businesses: []   // เริ่มต้นไม่มีการครอบครอง
     };
 
-    function initProfileUI() {
-      document.getElementById('headerPlayerName').innerText = currentUser.name;
-      document.getElementById('headerPlayerCareer').innerText = currentUser.career;
-      document.getElementById('headerRoomId').innerText = currentUser.roomId || "----";
-      
-      document.getElementById('modalPlayerName').innerText = currentUser.name;
-      document.getElementById('modalPlayerFullName').innerText = currentUser.name;
-      document.getElementById('modalPlayerPhone').innerText = currentUser.phone || "-";
-      document.getElementById('modalPlayerEmail').innerText = currentUser.email || "-";
-      document.getElementById('modalPlayerCareer').innerText = currentUser.career;
-      document.getElementById('modalPlayerRole').innerText = currentUser.role.toUpperCase();
-      document.getElementById('modalPlayerRoomCode').innerText = currentUser.roomId || "----";
+    let hasWonGame = false;
+    let roomPlayers = []; // สำหรับ Admin ดูข้อมูลผู้เล่นทุกคน
+
+    // ==================== 1. ระบบเวลาจำลองในเกม (5 วินาที = 1 วัน) ====================
+    let currentGameDay = 1;
+    let startHistoricalYear = 2000;
+
+    function initGameTimeline() {
+      // สุ่มปีย้อนหลัง 20 - 30 ปี (เช่น 1996 - 2006)
+      const currentYear = new Date().getFullYear();
+      const pastOffset = Math.floor(Math.random() * 11) + 20; // 20 - 30
+      startHistoricalYear = currentYear - pastOffset;
+
+      updateTimelineDisplay();
+
+      // เดินเวลา 5 วินาที = 1 วันในเกม
+      setInterval(() => {
+        currentGameDay += 1;
+        updateTimelineDisplay();
+
+        // ครบ 360 วัน = 1 ปีในเกม -> คิดค่าต่ออายุเครือข่าย 450 บาท
+        if (currentGameDay % 360 === 0 && gameState.networkRegistered) {
+          if (gameState.cash >= 450) {
+            gameState.cash -= 450;
+            alert(`🔔 ครบรอบ 1 ปีในเกม: หักค่าต่ออายุสมาชิกธุรกิจเครือข่าย ฿450`);
+          } else {
+            alert(`⚠️ คำเตือน: เงินสดไม่พอจ่ายค่าต่ออายุเครือข่าย (฿450)!`);
+          }
+          updateFinancialUI();
+        }
+      }, 5000);
     }
 
-    function openProfileModal() { document.getElementById('profileModal').classList.remove('hidden'); }
-    function closeProfileModal() { document.getElementById('profileModal').classList.add('hidden'); }
-
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('bg-neutral-800', 'text-sky-400', 'border-sky-500/40');
-        btn.classList.add('text-neutral-400');
-      });
-
-      document.getElementById(tabId).classList.remove('hidden');
-      const activeBtn = document.getElementById('btn-' + tabId);
-      activeBtn.classList.add('bg-neutral-800', 'text-sky-400', 'border-sky-500/40');
-      activeBtn.classList.remove('text-neutral-400');
+    function updateTimelineDisplay() {
+      const yearElapsed = Math.floor((currentGameDay - 1) / 360);
+      const activeYear = startHistoricalYear + yearElapsed;
+      const dayOfYear = ((currentGameDay - 1) % 360) + 1;
+      document.getElementById('gameTimelineDisplay').innerText = `ปี ${activeYear} (วันที่ ${dayOfYear}/360)`;
     }
 
-    // คำนวณ Passive Income จากทุกส่วน
-    function calculatePassiveIncome() {
-      // 1. อสังหาฯ (Tab 3)
-      const reIncome = gameState.realEstates
-        .filter(re => re.owned)
-        .reduce((sum, re) => sum + re.cashflow, 0);
-
-      // 2. ธุรกิจทั่วไป (Tab 4)
-      const bizIncome = gameState.businesses
-        .filter(b => b.owned)
-        .reduce((sum, b) => sum + b.monthlyProfit, 0);
-
-      // 3. ธุรกิจเครือข่าย (Tab 5: อ้างอิงแผนเกียรติคุณ)
-      let networkIncome = 0;
-      if (gameState.qualifiedLegs >= 6) networkIncome = 250000;
-      else if (gameState.qualifiedLegs >= 4) networkIncome = 100000;
-      else if (gameState.qualifiedLegs >= 3) networkIncome = 60000;
-      else if (gameState.qualifiedLegs >= 2) networkIncome = 40000;
-      else if (gameState.qualifiedLegs >= 1) networkIncome = 25000;
-      else if (gameState.qualifiedLegs > 0) networkIncome = 5000;
-
-      return reIncome + bizIncome + networkIncome;
-    }
-
-    // ตรวจสอบเงื่อนไขชนะเกม
-    function checkWinCondition(passiveIncome, totalExpense) {
-      const progress = Math.min(100, Math.round((passiveIncome / totalExpense) * 100));
-      document.getElementById('winProgressText').innerText = `${progress}%`;
-      document.getElementById('winProgressBar').style.width = `${progress}%`;
-
-      if (!hasWonGame && passiveIncome > totalExpense) {
-        hasWonGame = true;
-        document.getElementById('winPassiveIncome').innerText = `+฿${passiveIncome.toLocaleString()}`;
-        document.getElementById('winTotalExpense').innerText = `฿${totalExpense.toLocaleString()}`;
-        document.getElementById('winSurplus').innerText = `+฿${(passiveIncome - totalExpense).toLocaleString()}`;
-        document.getElementById('winModal').classList.remove('hidden');
+    // ==================== 2. สิทธิ์ ADMIN & TAB รายชื่อผู้เล่น ====================
+    function checkAdminRole() {
+      if (currentUser.role === 'admin') {
+        document.getElementById('headerAdminBadge').classList.remove('hidden');
+        document.getElementById('btn-adminTab').classList.remove('hidden');
+        
+        // ฟังข้อมูลรายชื่อและสถานะของผู้เล่นทุกคนในห้องแบบ Realtime
+        roomDoc.collection('players').onSnapshot(snap => {
+          roomPlayers = [];
+          snap.forEach(doc => roomPlayers.push(doc.data()));
+          renderAdminPlayerList();
+        });
       }
     }
 
-    function closeWinModal() {
-      document.getElementById('winModal').classList.add('hidden');
-    }
-
-    // อัปเดตข้อมูลการเงินทั้งหมด
-    function updateFinancialUI() {
-      const passiveIncome = calculatePassiveIncome();
-      const totalIncome = gameState.salary + passiveIncome;
-      const totalExpense = gameState.livingExpense + gameState.debtExpense;
-      const netCashflow = totalIncome - totalExpense;
-
-      document.getElementById('headerCash').innerText = `฿${gameState.cash.toLocaleString()}`;
-      document.getElementById('careerSalary').innerText = `฿${gameState.salary.toLocaleString()}`;
-      document.getElementById('careerPassiveIncome').innerText = `+฿${passiveIncome.toLocaleString()}`;
-      document.getElementById('careerTotalIncome').innerText = `฿${totalIncome.toLocaleString()}`;
-      document.getElementById('careerLivingExpense').innerText = `฿${gameState.livingExpense.toLocaleString()}`;
-      document.getElementById('careerDebtExpense').innerText = `฿${gameState.debtExpense.toLocaleString()}`;
-      document.getElementById('careerTotalExpense').innerText = `฿${totalExpense.toLocaleString()}`;
+    function renderAdminPlayerList() {
+      const container = document.getElementById('adminPlayerListContainer');
+      const counter = document.getElementById('adminPlayerListCounter');
+      container.innerHTML = '';
       
-      const netEl = document.getElementById('careerNetCashflow');
-      netEl.innerText = `${netCashflow >= 0 ? '+' : ''}฿${netCashflow.toLocaleString()}`;
-      netEl.className = `text-3xl font-extrabold font-mono ${netCashflow >= 0 ? 'text-emerald-400' : 'text-red-500'}`;
+      const playersOnly = roomPlayers.filter(p => p.role === 'player');
+      counter.innerText = `${playersOnly.length} คน`;
 
-      checkWinCondition(passiveIncome, totalExpense);
-    }
-
-    function claimPayday() {
-      const passiveIncome = calculatePassiveIncome();
-      const netCashflow = (gameState.salary + passiveIncome) - (gameState.livingExpense + gameState.debtExpense);
-      gameState.cash += netCashflow;
-      alert(`คุณได้รับเงินสดสุทธิประจำรอบ: ฿${netCashflow.toLocaleString()}`);
-      updateFinancialUI();
-    }
-
-    // Tab 2: ตลาดหุ้น
-    function renderStocks() {
-      const tbody = document.getElementById('stockTableBody');
-      tbody.innerHTML = '';
-      gameState.stocks.forEach((st, idx) => {
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-neutral-950/40";
-        tr.innerHTML = `
-          <td class="py-3 px-4 font-bold text-white">${st.symbol} <span class="text-xs font-normal text-neutral-400 block">${st.name}</span></td>
-          <td class="py-3 px-4 text-neutral-400">${st.category}</td>
-          <td class="py-3 px-4 text-right font-bold text-sky-400">฿${st.price}</td>
-          <td class="py-3 px-4 text-right text-emerald-400">${st.owned} หุ้น</td>
-          <td class="py-3 px-4 text-center">
-            <div class="flex justify-center gap-1.5 font-sans">
-              <button onclick="tradeStock(${idx}, 'buy')" class="bg-sky-500 hover:bg-sky-400 text-black text-xs font-bold px-2.5 py-1 rounded">ซื้อ 10</button>
-              <button onclick="tradeStock(${idx}, 'sell')" class="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded">ขาย 10</button>
-            </div>
-          </td>
+      playersOnly.forEach(p => {
+        const item = document.createElement('div');
+        item.className = "p-3 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl cursor-pointer transition-all flex justify-between items-center";
+        item.onclick = () => showAdminPlayerDetail(p);
+        item.innerHTML = `
+          <div>
+            <div class="font-bold text-white text-sm">${p.name}</div>
+            <div class="text-xs text-neutral-400">${p.career || '-'}</div>
+          </div>
+          <span class="text-xs font-mono text-emerald-400">฿${(p.cash || 100000).toLocaleString()}</span>
         `;
-        tbody.appendChild(tr);
+        container.appendChild(item);
       });
     }
 
-    function tradeStock(index, type) {
-      const st = gameState.stocks[index];
-      const amount = 10;
-      const totalCost = st.price * amount;
+    function showAdminPlayerDetail(player) {
+      document.getElementById('adminSelectedPlayerEmpty').classList.add('hidden');
+      document.getElementById('adminSelectedPlayerDetail').classList.remove('hidden');
 
-      if (type === 'buy') {
-        if (gameState.cash >= totalCost) {
-          gameState.cash -= totalCost;
-          st.owned += amount;
-        } else {
-          alert("เงินสดของคุณไม่เพียงพอสำหรับการซื้อหุ้น");
+      document.getElementById('adminViewName').innerText = player.name;
+      document.getElementById('adminViewCareer').innerText = player.career || '-';
+      document.getElementById('adminViewPhone').innerText = player.phone || '-';
+
+      const pCash = player.cash || 100000;
+      const pPassive = player.passiveIncome || 0;
+      const pExpense = player.totalExpense || 23000;
+
+      document.getElementById('adminViewCash').innerText = `฿${pCash.toLocaleString()}`;
+      document.getElementById('adminViewPassive').innerText = `+฿${pPassive.toLocaleString()}`;
+      document.getElementById('adminViewExpense').innerText = `฿${pExpense.toLocaleString()}`;
+
+      document.getElementById('adminViewStockStatus').innerText = player.stockUnlocked ? "เปิดแล้ว (฿30,000)" : "ยังไม่เปิดบัญชี";
+      document.getElementById('adminViewRECount').innerText = `${player.realEstatesCount || 0} รายการ`;
+      document.getElementById('adminViewBizCount').innerText = `${player.businessesCount || 0} รายการ`;
+      document.getElementById('adminViewNetworkRank').innerText = player.networkRank || "ยังไม่สมัคร";
+    }
+
+    // ซิงก์สถานะผู้เล่นปัจจุบันขึ้น Cloud ให้ Admin มองเห็น
+    async function syncPlayerStateToCloud() {
+      if (currentUser.role === 'player') {
+        const passive = calculatePassiveIncome();
+        const totalExpense = gameState.livingExpense + gameState.debtExpense;
+
+        let rank = "ยังไม่สมัคร";
+        if (gameState.networkRegistered) {
+          for (let r of NETWORK_RANKS) {
+            if (gameState.qualifiedLegs >= r.reqLegs) rank = r.name;
+          }
         }
-      } else {
-        if (st.owned >= amount) {
-          gameState.cash += totalCost;
-          st.owned -= amount;
-        } else {
-          alert("คุณไม่มีหุ้นเพียงพอสำหรับการขาย");
+
+        try {
+          await roomDoc.collection('players').doc(currentUser.uid).set({
+            cash: gameState.cash,
+            passiveIncome: passive,
+            totalExpense: totalExpense,
+            stockUnlocked: gameState.stockUnlocked,
+            realEstatesCount: gameState.realEstates.length,
+            businessesCount: gameState.businesses.length,
+            networkRank: rank
+          }, { merge: true });
+        } catch (e) {
+          console.error("Sync error:", e);
         }
       }
-      renderStocks();
-      updateFinancialUI();
     }
 
-    // Tab 3: อสังหาฯ
-    function renderRealEstates() {
-      const container = document.getElementById('realEstateContainer');
-      container.innerHTML = '';
-      gameState.realEstates.forEach(re => {
-        const card = document.createElement('div');
-        card.className = `p-5 rounded-2xl border ${re.owned ? 'border-emerald-500/50 bg-neutral-950' : 'border-neutral-800 bg-neutral-900'} shadow-lg flex flex-col justify-between`;
-        card.innerHTML = `
-          <div>
-            <div class="flex justify-between items-start mb-2">
-              <h4 class="font-bold text-white text-base">${re.name}</h4>
-              ${re.owned ? '<span class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded">เป็นเจ้าของแล้ว</span>' : ''}
-            </div>
-            <div class="space-y-2 text-xs text-neutral-300 mt-4 mb-5">
-              <div class="flex justify-between"><span>เงินดาวน์ (จ่ายสด):</span><b class="text-white font-mono">฿${re.downPayment.toLocaleString()}</b></div>
-              <div class="flex justify-between"><span>ยอดเงินกู้ธนาคาร:</span><b class="text-neutral-400 font-mono">฿${re.loan.toLocaleString()}</b></div>
-              <div class="flex justify-between text-emerald-400 font-bold"><span>กระแสเงินสดสุทธิ/เดือน:</span><b class="font-mono">+฿${re.cashflow.toLocaleString()}</b></div>
-            </div>
-          </div>
-          <button onclick="buyRealEstate(${re.id})" ${re.owned ? 'disabled' : ''} class="w-full ${re.owned ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed' : 'bg-sky-500 hover:bg-sky-400 text-black'} font-bold py-2.5 rounded-xl text-sm transition-all shadow-md">
-            ${re.owned ? 'ถือครองทรัพย์สินแล้ว' : 'ซื้ออสังหาริมทรัพย์นี้'}
-          </button>
-        `;
-        container.appendChild(card);
-      });
-    }
+    // ==================== 3. การปลดล็อก TABS (Stock, เครือข่าย) ====================
+    // 3.1 ปลดล็อก Tab Stock (30,000 บาท เข้าพอร์ต)
+    function unlockStockAccount() {
+      const cost = 30000;
+      if (gameState.cash >= cost) {
+        gameState.cash -= cost;
+        gameState.stockUnlocked = true;
+        gameState.stockTradingBalance = cost; // เงินเข้าพอร์ตหุ้น
 
-    function buyRealEstate(id) {
-      const item = gameState.realEstates.find(r => r.id === id);
-      if (!item || item.owned) return;
+        document.getElementById('stockLockedScreen').classList.add('hidden');
+        document.getElementById('stockUnlockedScreen').classList.remove('hidden');
+        document.getElementById('stockTradingCash').innerText = `฿${gameState.stockTradingBalance.toLocaleString()}`;
 
-      if (gameState.cash >= item.downPayment) {
-        gameState.cash -= item.downPayment;
-        item.owned = true;
-        renderRealEstates();
+        alert("เปิดบัญชี Stock & Crypto สำเร็จ! นำเงิน ฿30,000 เข้าสู่พอร์ตเรียบร้อยแล้ว");
         updateFinancialUI();
-        alert(`ซื้ออสังหาสำเร็จ! ได้รับกระแสเงินสดเพิ่ม +฿${item.cashflow.toLocaleString()}/เดือน`);
       } else {
-        alert("เงินสดของคุณไม่พอสำหรับจ่ายเงินดาวน์");
+        alert("เงินสดของคุณไม่เพียงพอสำหรับการเปิดบัญชี (ต้องการ ฿30,000)");
       }
     }
 
-    // Tab 4: ธุรกิจทั่วไป
-    function renderBusinesses() {
-      const container = document.getElementById('businessContainer');
-      container.innerHTML = '';
-      gameState.businesses.forEach(b => {
-        const card = document.createElement('div');
-        card.className = `p-5 rounded-2xl border ${b.owned ? 'border-emerald-500/50 bg-neutral-950' : 'border-neutral-800 bg-neutral-900'} shadow-lg flex flex-col justify-between`;
-        card.innerHTML = `
-          <div>
-            <div class="flex justify-between items-start mb-2">
-              <h4 class="font-bold text-white text-base">${b.name}</h4>
-              ${b.owned ? '<span class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded">เป็นเจ้าของแล้ว</span>' : ''}
-            </div>
-            <div class="space-y-2 text-xs text-neutral-300 mt-4 mb-5">
-              <div class="flex justify-between"><span>เงินลงทุนเริ่มแรก:</span><b class="text-white font-mono">฿${b.cost.toLocaleString()}</b></div>
-              <div class="flex justify-between text-emerald-400 font-bold"><span>กำไรสุทธิเฉลี่ย/เดือน:</span><b class="font-mono">+฿${b.monthlyProfit.toLocaleString()}</b></div>
-            </div>
-          </div>
-          <button onclick="buyBusiness(${b.id})" ${b.owned ? 'disabled' : ''} class="w-full ${b.owned ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed' : 'bg-sky-500 hover:bg-sky-400 text-black'} font-bold py-2.5 rounded-xl text-sm transition-all shadow-md">
-            ${b.owned ? 'กำลังบริหารกิจการ' : 'เข้าซื้อและเริ่มทำธุรกิจ'}
-          </button>
-        `;
-        container.appendChild(card);
-      });
-    }
+    // 3.2 สมัครธุรกิจเครือข่าย (900 บาท)
+    function registerNetworkBusiness() {
+      const fee = 900;
+      if (gameState.cash >= fee) {
+        gameState.cash -= fee;
+        gameState.networkRegistered = true;
 
-    function buyBusiness(id) {
-      const item = gameState.businesses.find(b => b.id === id);
-      if (!item || item.owned) return;
+        document.getElementById('networkLockedScreen').classList.add('hidden');
+        document.getElementById('networkUnlockedScreen').classList.remove('hidden');
 
-      if (gameState.cash >= item.cost) {
-        gameState.cash -= item.cost;
-        item.owned = true;
-        renderBusinesses();
+        alert("สมัครธุรกิจเครือข่ายสำเร็จ! ยินดีต้อนรับสู่เส้นทางเกียรติคุณระดับเพชร");
+        renderNetworkUI();
         updateFinancialUI();
-        alert(`ลงทุนในธุรกิจสำเร็จ! ได้รับผลตอบแทน +฿${item.monthlyProfit.toLocaleString()}/เดือน`);
       } else {
-        alert("เงินสดของคุณไม่เพียงพอสำหรับการลงทุนในธุรกิจนี้");
+        alert("เงินสดไม่เพียงพอสำหรับค่าสมัคร (ต้องการ ฿900)");
       }
     }
 
-    // Tab 5: ธุรกิจเครือข่าย (พัฒนาสายงานสู่ระดับเพชร)
+    // พัฒนาสายงานเครือข่าย (+1 Platinum)
     function developNextLeg() {
       const legCost = 20000;
       if (gameState.qualifiedLegs >= 6) {
@@ -680,11 +736,13 @@
         updateFinancialUI();
         renderNetworkUI();
       } else {
-        alert("เงินสดไม่เพียงพอสำหรับสร้างสายงาน (ต้องการ ฿20,000)");
+        alert("เงินสดไม่เพียงพอสำหรับพัฒนาสายงาน (ต้องการ ฿20,000)");
       }
     }
 
     function renderNetworkUI() {
+      if (!gameState.networkRegistered) return;
+
       const legsContainer = document.getElementById('legsGridContainer');
       legsContainer.innerHTML = '';
 
@@ -697,7 +755,7 @@
         legCard.innerHTML = `
           <div class="text-2xl mb-1">${isQualified ? '🌟' : '⚪'}</div>
           <div class="font-bold text-xs">สายที่ ${i}</div>
-          <div class="text-[10px] mt-0.5">${isQualified ? 'Platinum (21%)' : 'กำลังบ่มเพาะ'}</div>
+          <div class="text-[10px] mt-0.5">${isQualified ? 'Platinum' : 'กำลังบ่มเพาะ'}</div>
         `;
         legsContainer.appendChild(legCard);
       }
@@ -732,14 +790,111 @@
       });
     }
 
-    // เริ่มต้นระบบเมื่อโหลดหน้า
+    // ==================== 4. การเงินและเงื่อนไขชนะเกม ====================
+    function calculatePassiveIncome() {
+      // 1. เครือข่าย
+      let networkIncome = 0;
+      if (gameState.networkRegistered) {
+        if (gameState.qualifiedLegs >= 6) networkIncome = 250000;
+        else if (gameState.qualifiedLegs >= 4) networkIncome = 100000;
+        else if (gameState.qualifiedLegs >= 3) networkIncome = 60000;
+        else if (gameState.qualifiedLegs >= 2) networkIncome = 40000;
+        else if (gameState.qualifiedLegs >= 1) networkIncome = 25000;
+        else if (gameState.qualifiedLegs > 0) networkIncome = 5000;
+      }
+      return networkIncome;
+    }
+
+    function checkWinCondition(passiveIncome, totalExpense) {
+      const progress = Math.min(100, Math.round((passiveIncome / totalExpense) * 100));
+      document.getElementById('winProgressText').innerText = `${progress}%`;
+      document.getElementById('winProgressBar').style.width = `${progress}%`;
+
+      if (!hasWonGame && passiveIncome > totalExpense) {
+        hasWonGame = true;
+        document.getElementById('winPassiveIncome').innerText = `+฿${passiveIncome.toLocaleString()}`;
+        document.getElementById('winTotalExpense').innerText = `฿${totalExpense.toLocaleString()}`;
+        document.getElementById('winSurplus').innerText = `+฿${(passiveIncome - totalExpense).toLocaleString()}`;
+        document.getElementById('winModal').classList.remove('hidden');
+      }
+    }
+
+    function closeWinModal() { document.getElementById('winModal').classList.add('hidden'); }
+
+    function updateFinancialUI() {
+      const passiveIncome = calculatePassiveIncome();
+      const totalIncome = gameState.salary + passiveIncome;
+      const totalExpense = gameState.livingExpense + gameState.debtExpense;
+      const netCashflow = totalIncome - totalExpense;
+
+      document.getElementById('headerCash').innerText = `฿${gameState.cash.toLocaleString()}`;
+      document.getElementById('careerSalary').innerText = `฿${gameState.salary.toLocaleString()}`;
+      document.getElementById('careerPassiveIncome').innerText = `+฿${passiveIncome.toLocaleString()}`;
+      document.getElementById('careerTotalIncome').innerText = `฿${totalIncome.toLocaleString()}`;
+      document.getElementById('careerLivingExpense').innerText = `฿${gameState.livingExpense.toLocaleString()}`;
+      document.getElementById('careerDebtExpense').innerText = `฿${gameState.debtExpense.toLocaleString()}`;
+      document.getElementById('careerTotalExpense').innerText = `฿${totalExpense.toLocaleString()}`;
+      
+      const netEl = document.getElementById('careerNetCashflow');
+      netEl.innerText = `${netCashflow >= 0 ? '+' : ''}฿${netCashflow.toLocaleString()}`;
+      netEl.className = `text-3xl font-extrabold font-mono ${netCashflow >= 0 ? 'text-emerald-400' : 'text-red-500'}`;
+
+      checkWinCondition(passiveIncome, totalExpense);
+      syncPlayerStateToCloud();
+    }
+
+    function claimPayday() {
+      const passiveIncome = calculatePassiveIncome();
+      const netCashflow = (gameState.salary + passiveIncome) - (gameState.livingExpense + gameState.debtExpense);
+      gameState.cash += netCashflow;
+      alert(`คุณได้รับกระแสเงินสดสุทธิ: ฿${netCashflow.toLocaleString()}`);
+      updateFinancialUI();
+    }
+
+    // ==================== 5. ฟังก์ชัน UI ทั่วไป ====================
+    function initProfileUI() {
+      document.getElementById('headerPlayerName').innerText = currentUser.name;
+      document.getElementById('headerPlayerCareer').innerText = currentUser.career;
+      document.getElementById('headerRoomId').innerText = roomId;
+      
+      document.getElementById('modalPlayerName').innerText = currentUser.name;
+      document.getElementById('modalPlayerFullName').innerText = currentUser.name;
+      document.getElementById('modalPlayerPhone').innerText = currentUser.phone || "-";
+      document.getElementById('modalPlayerEmail').innerText = currentUser.email || "-";
+      document.getElementById('modalPlayerCareer').innerText = currentUser.career;
+      document.getElementById('modalPlayerRole').innerText = currentUser.role.toUpperCase();
+      document.getElementById('modalPlayerRoomCode').innerText = roomId;
+    }
+
+    function openProfileModal() { document.getElementById('profileModal').classList.remove('hidden'); }
+    function closeProfileModal() { document.getElementById('profileModal').classList.add('hidden'); }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-neutral-800', 'text-sky-400', 'border-sky-500/40');
+        btn.classList.add('text-neutral-400');
+      });
+
+      document.getElementById(tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById('btn-' + tabId);
+      activeBtn.classList.add('bg-neutral-800', 'text-sky-400', 'border-sky-500/40');
+      activeBtn.classList.remove('text-neutral-400');
+    }
+
+    // เริ่มต้นระบบเมื่อโหลดหน้าเสร็จ
     window.addEventListener('DOMContentLoaded', () => {
       initProfileUI();
-      switchTab('careerTab');
-      renderStocks();
-      renderRealEstates();
-      renderBusinesses();
-      renderNetworkUI();
+      checkAdminRole();
+      initGameTimeline();
+
+      // เปิดแท็บแรกตามสิทธิ์ (Admin เปิดหน้า Admin / Player เปิดหน้า Career)
+      if (currentUser.role === 'admin') {
+        switchTab('adminTab');
+      } else {
+        switchTab('careerTab');
+      }
+
       updateFinancialUI();
     });
   </script>
