@@ -101,7 +101,7 @@
       <form onsubmit="loginAsAdmin(event)" class="space-y-4">
         <div>
           <label class="block text-xs text-neutral-300 mb-1">รหัสผ่าน Admin</label>
-          <input type="password" id="adminPassword" required placeholder="รหัสควบคุมระบบ" 
+          <input type="password" id="adminPassword" required placeholder="ใส่รหัสผ่าน 4 หลัก" 
                  class="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500">
         </div>
         <button type="submit" class="w-full bg-red-600 hover:bg-red-500 text-white font-semibold py-2.5 rounded-lg transition-colors">
@@ -171,11 +171,11 @@
       await enterLobby(userData);
     }
 
-    // 3. Admin Login
+    // 3. Admin Login (รหัสผ่าน: 9999)
     async function loginAsAdmin(e) {
       e.preventDefault();
       const pw = document.getElementById('adminPassword').value;
-      if (pw === "admin1234") {
+      if (pw === "9999") {
         const adminData = {
           uid: "admin_master",
           name: "Game Master 🥸",
@@ -190,24 +190,21 @@
       }
     }
 
-    // ตรวจสอบโควตา 20 คนก่อนอนุญาตให้เข้าห้อง
+    // ตรวจสอบโควตา 20 คนก่อนเข้าห้อง
     async function enterLobby(user) {
       try {
-        // Admin เข้าได้เสมอ ไม่ถูกจำกัดสิทธิ์
         if (user.role === 'admin') {
           localStorage.setItem('gameUser', JSON.stringify(user));
           window.location.href = "lobby.html";
           return;
         }
 
-        // ตรวจสอบจำนวนผู้เล่นปัจจุบันจาก Firestore
         const playersSnapshot = await roomDoc.collection('players').get();
         const currentPlayers = [];
         playersSnapshot.forEach(doc => currentPlayers.push(doc.data()));
 
         const isExistingPlayer = currentPlayers.some(p => p.uid === user.uid);
 
-        // หากผู้เล่นใหม่พยายามเข้า แต่มีครบ 20 คนแล้ว ให้แจ้งเตือนและสกัดกั้น
         if (!isExistingPlayer && currentPlayers.length >= 20) {
           alert("⛔ ผู้เล่นเต็มแล้ว (ครบ 20 คน) กรุณารอจบเกมก่อนนะครับ");
           if (firebase.auth().currentUser) {
