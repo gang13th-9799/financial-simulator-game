@@ -15,7 +15,7 @@
 </head>
 <body class="bg-black text-white min-h-screen flex flex-col justify-between">
 
-  <!-- แถบ Header แสดงเลขห้อง 4 หลักชัดเจน -->
+  <!-- แถบ Header -->
   <header class="w-full bg-neutral-950 border-b border-neutral-800 px-6 py-4 flex justify-between items-center">
     <div class="flex items-center gap-3">
       <div class="w-3 h-3 rounded-full bg-sky-400 animate-pulse"></div>
@@ -53,7 +53,7 @@
               <span>รายชื่อในห้องออนไลน์</span>
               <span id="playerCounter" class="bg-neutral-800 text-sky-400 text-xs px-2.5 py-0.5 rounded-full font-mono">0 / 20</span>
             </h2>
-            <p class="text-xs text-neutral-400 mt-0.5">จำกัดผู้เล่นไม่เกิน 20 คน (Admin ไม่นับรวม)</p>
+            <p class="text-xs text-neutral-400 mt-0.5">จำกัดผู้เล่นไม่เกิน 20 คนต่อห้อง</p>
           </div>
           <div class="flex items-center gap-3 text-xs text-neutral-400">
             <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span> พร้อม</span>
@@ -62,11 +62,11 @@
         </div>
 
         <div id="playerList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[460px] overflow-y-auto pr-1">
-          <!-- ผู้เล่นในห้องจะแสดงที่นี่ -->
+          <!-- ผู้เล่นจะแสดงที่นี่ -->
         </div>
       </div>
 
-      <!-- แถบด้านล่าง: ปุ่มพร้อมสำหรับผู้เล่น และแผงสั่งเริ่มสำหรับ Admin -->
+      <!-- แถบด้านล่าง: ปุ่มพร้อมสำหรับผู้เล่น และปุ่มควบคุม Admin -->
       <div class="pt-6 border-t border-neutral-800 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         
         <!-- ปุ่มพร้อม (แสดงเฉพาะผู้เล่น) -->
@@ -78,13 +78,17 @@
 
         <!-- Admin Controls (แสดงเฉพาะ Admin) -->
         <div id="adminControls" class="w-full sm:w-auto hidden flex flex-wrap items-center gap-2">
-          <button onclick="resetRoomForNewGame()" 
-                  class="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-semibold px-3 py-3 rounded-xl transition-all border border-neutral-700">
-            ล้างห้อง
+          
+          <!-- ปุ่มปิดห้อง ยกเลิกห้องและเกม -->
+          <button onclick="adminCloseRoom()" 
+                  class="bg-neutral-800 hover:bg-red-600/20 text-red-500 hover:text-red-400 text-xs font-semibold px-4 py-3 rounded-xl transition-all border border-red-500/40 flex items-center gap-1.5">
+            <span>🚫</span> ปิดห้อง (ยกเลิกห้องและเกม)
           </button>
+
+          <!-- ปุ่มเริ่มเกมทุกคน (เวลาจะยังไม่เดินจนกว่าจะกด Play ในเกม) -->
           <button onclick="adminStartGame()" 
-                  class="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-red-600/30 flex items-center justify-center gap-2">
-            <span>เริ่มเกมทุกคน</span>
+                  class="bg-emerald-600 hover:bg-emerald-500 text-black font-bold px-6 py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2">
+            <span>เข้าหน้าเกมทุกคน</span>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"></path></svg>
           </button>
         </div>
@@ -98,9 +102,7 @@
         <h2 class="text-base font-bold text-white pb-3 border-b border-neutral-800">
           ห้องแชทสด (Realtime Chat)
         </h2>
-        <div id="chatBox" class="mt-4 space-y-3 overflow-y-auto max-h-[380px] pr-2 text-sm">
-          <!-- ข้อความแชท -->
-        </div>
+        <div id="chatBox" class="mt-4 space-y-3 overflow-y-auto max-h-[380px] pr-2 text-sm"></div>
       </div>
 
       <form onsubmit="sendMessage(event)" class="mt-4 pt-3 border-t border-neutral-800 flex gap-2">
@@ -116,7 +118,6 @@
 
   <!-- Firebase Scripts -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script>
@@ -151,13 +152,13 @@
     let isMyReady = false;
     const roomDoc = db.collection('rooms').doc(roomId);
 
-    // 1. ลงทะเบียนผู้ใช้งานเข้าห้องที่ระบุ
+    // 1. ลงทะเบียนผู้ใช้งานเข้าห้อง
     async function joinRoom() {
       try {
         await roomDoc.collection('players').doc(currentUser.uid).set({
           uid: currentUser.uid,
           name: currentUser.name,
-          career: currentUser.career,
+          career: currentUser.career || "ผู้ดูแลระบบ",
           role: currentUser.role,
           isReady: currentUser.role === 'admin' ? true : false,
           joinedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -168,14 +169,26 @@
     }
     joinRoom();
 
-    // 2. ฟังสถานะเริ่มเกม
+    // 2. ตรวจสอบสถานะห้องแบบ Realtime (ถ้าเริ่มให้ไปหน้าเกม / ถ้าปิดห้องให้ดีดออกทุกคน)
     roomDoc.onSnapshot(doc => {
-      if (doc.exists && doc.data().status === 'playing') {
-        window.location.href = "game.html";
+      if (doc.exists) {
+        const data = doc.data();
+        
+        // หาก Admin สั่งเริ่มเกม
+        if (data.status === 'playing') {
+          window.location.href = "game.html";
+        }
+        
+        // หาก Admin สั่งปิดห้อง (ยกเลิกห้องและเกม)
+        if (data.status === 'closed') {
+          alert("⚠️ ห้องนี้ถูกปิดหรือยกเลิกโดยผู้ดูแลระบบ (Admin) แล้ว");
+          localStorage.removeItem('gameUser');
+          window.location.href = "index.html";
+        }
       }
     });
 
-    // 3. แสดงรายชื่อผู้เล่นในห้อง
+    // 3. แสดงรายชื่อคนในห้อง
     roomDoc.collection('players').onSnapshot(snapshot => {
       const container = document.getElementById('playerList');
       const counter = document.getElementById('playerCounter');
@@ -242,7 +255,7 @@
       }
     }
 
-    // 5. แชทสด
+    // 5. ระบบแชทสด
     roomDoc.collection('chat').orderBy('time', 'asc').limitToLast(50).onSnapshot(snapshot => {
       const box = document.getElementById('chatBox');
       box.innerHTML = '';
@@ -276,33 +289,41 @@
       input.value = '';
     }
 
-    // 6. Admin เริ่มเกม
+    // 6. Admin เริ่มเกมทุกคน (เวลาหยุดไว้ก่อน รอไปกด Play ในเกม)
     async function adminStartGame() {
-      if (confirm("ต้องการเริ่มเกมทันทีหรือไม่? ผู้เล่นทุกคนในห้องจะถูกพาเข้าหน้าเกมพร้อมกัน")) {
-        await roomDoc.set({ status: 'playing' }, { merge: true });
+      if (confirm("ต้องการพาผู้เล่นทุกคนเข้าหน้าเกมหรือไม่? (เวลาจะยังไม่เดินจนกว่า Admin จะกดปุ่ม Play ในเกม)")) {
+        await roomDoc.set({ 
+          status: 'playing',
+          isTimePaused: true 
+        }, { merge: true });
       }
     }
 
-    // 7. Admin ล้างห้อง
-    async function resetRoomForNewGame() {
-      if (!confirm("คุณต้องการล้างห้องใช่หรือไม่?")) return;
-      const snap = await roomDoc.collection('players').get();
-      const batch = db.batch();
-      snap.docs.forEach(doc => batch.delete(doc.ref));
-      await batch.commit();
+    // 7. Admin ปิดห้อง (ยกเลิกห้องและเกมหมายเลขนี้)
+    async function adminCloseRoom() {
+      const confirmed = confirm(`⚠️ คุณต้องการปิดห้องหมายเลข ${roomId} ใช่หรือไม่?\nการกระทำนี้จะยกเลิกห้องและเกม และส่งผู้เล่นทุกคนกลับสู่หน้า Login`);
+      if (!confirmed) return;
 
-      await roomDoc.set({ status: 'waiting' });
-      alert("รีเซ็ตห้องเรียบร้อย");
+      try {
+        // อัปเดตสถานะห้องเป็น closed บน Firestore เพื่อส่งสัญญาณให้ทุกคนในห้องเด้งออกพร้อมกัน
+        await roomDoc.update({
+          status: 'closed',
+          isTimePaused: true
+        });
+
+        // ล้างข้อมูลตนเองและกลับหน้า Login
+        localStorage.removeItem('gameUser');
+        window.location.href = "index.html";
+      } catch (err) {
+        alert("ปิดห้องไม่สำเร็จ: " + err.message);
+      }
     }
 
-    // 8. ออกจากห้อง
+    // 8. ผู้เล่นออกจากห้องรายบุคคล
     async function leaveRoom() {
       try {
         if (currentUser && currentUser.uid) {
           await roomDoc.collection('players').doc(currentUser.uid).delete();
-        }
-        if (firebase.auth().currentUser) {
-          await firebase.auth().signOut();
         }
       } catch (e) {
         console.error("Error leaving room:", e);
