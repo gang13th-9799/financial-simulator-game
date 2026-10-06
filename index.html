@@ -162,7 +162,7 @@
         <button type="button" onclick="generateRandomRoomCode()" class="w-1/2 bg-neutral-800 hover:bg-neutral-700 text-white font-medium py-3 rounded-xl transition-colors text-sm">
           🎲 สุ่มเลขใหม่
         </button>
-        <button type="button" id="btnConfirmCreate" onclick="confirmCreateRoom(event)" class="w-1/2 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-red-600/30 text-sm">
+        <button type="button" id="btnConfirmCreate" onclick="confirmCreateRoom()" class="w-1/2 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-red-600/30 text-sm">
           เปิด Lobby ห้องนี้
         </button>
       </div>
@@ -309,23 +309,32 @@
       document.getElementById('generatedRoomCode').innerText = currentAdminRoomCode;
     }
 
-    // Admin กดยืนยันเปิดห้อง Lobby และพา Admin เข้า Lobby ทันที
-    async function confirmCreateRoom(e) {
-      const btn = e.target;
-      btn.disabled = true;
-      btn.innerText = "กำลังสร้างห้อง...";
+    // 5. Admin กดยืนยันเปิดห้อง Lobby และพา Admin เข้า Lobby ทันที
+    async function confirmCreateRoom() {
+      const btn = document.getElementById('btnConfirmCreate');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = "กำลังสร้างห้อง...";
+      }
+
+      const roomCode = document.getElementById('generatedRoomCode').innerText.trim();
+      if (!roomCode || roomCode === "----") {
+        alert("กรุณาสุ่มเลขห้องก่อน");
+        if (btn) { btn.disabled = false; btn.innerText = "เปิด Lobby ห้องนี้"; }
+        return;
+      }
 
       try {
-        const roomDocRef = db.collection('rooms').doc(currentAdminRoomCode);
+        const roomDocRef = db.collection('rooms').doc(roomCode);
         
         // 1. สร้างเอกสารห้องใหม่บน Firestore
         await roomDocRef.set({
-          roomId: currentAdminRoomCode,
+          roomId: roomCode,
           status: 'waiting',
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // 2. ข้อมูล Admin
+        // 2. จัดเตรียมข้อมูล Admin
         const adminData = {
           uid: "admin_" + Math.random().toString(36).substring(2, 7),
           name: "Admin Master",
@@ -333,7 +342,7 @@
           email: "admin@gamemaster.io",
           career: "ผู้ดูแลระบบ",
           role: "admin",
-          roomId: currentAdminRoomCode,
+          roomId: roomCode,
           isReady: true
         };
 
@@ -353,9 +362,11 @@
 
       } catch (err) {
         console.error("Create room error:", err);
-        alert("ไม่สามารถสร้างห้องได้: " + err.message);
-        btn.disabled = false;
-        btn.innerText = "เปิด Lobby ห้องนี้";
+        alert("ไม่สามารถสร้างห้องได้ (โปรดตรวจ Firestore Rules): " + err.message);
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = "เปิด Lobby ห้องนี้";
+        }
       }
     }
   </script>
