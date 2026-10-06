@@ -72,13 +72,21 @@
     </div>
   </main>
 
-  <!-- หน้าต่างเลือกห้องและเลือกอาชีพ 1-10 สำหรับผู้เล่น -->
+  <!-- หน้าต่างเลือกห้องและเลือกอาชีพ พร้อมรายการห้องเดิมที่ยังไม่จบ -->
   <div id="playerRoomModal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden z-50">
-    <div class="bg-neutral-900 border border-sky-500/40 rounded-2xl w-full max-w-md p-6 relative shadow-2xl">
+    <div class="bg-neutral-900 border border-sky-500/40 rounded-2xl w-full max-w-md p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
       <h3 class="text-xl font-bold text-white mb-1 flex items-center gap-2">
         <span class="text-sky-400">🎮</span> ข้อมูลผู้เล่นก่อนเข้า Lobby
       </h3>
-      <p class="text-xs text-neutral-400 mb-5">ระบุอาชีพในเกมและรหัสห้อง 4 หลักที่ได้รับจาก Admin</p>
+      <p class="text-xs text-neutral-400 mb-4">ระบุอาชีพในเกมและรหัสห้อง 4 หลักที่ได้รับจาก Admin</p>
+
+      <!-- รายการห้องที่เคยเข้าร่วม (Active Rooms Only) -->
+      <div id="recentRoomsContainer" class="mb-5 hidden">
+        <label class="block text-xs font-semibold text-neutral-300 mb-1.5 flex items-center gap-1.5">
+          <span>🕒 ห้องที่คุณเคยเข้าร่วม (กำลังดำเนินเกมอยู่):</span>
+        </label>
+        <div id="recentRoomsList" class="space-y-1.5"></div>
+      </div>
 
       <form onsubmit="joinRoomSubmit(event)" class="space-y-4">
         <div>
@@ -131,7 +139,7 @@
       <div class="text-center mb-5">
         <div class="text-4xl mb-2">🥸</div>
         <h3 class="text-lg font-bold text-red-500">เข้าสู่ระบบ Admin</h3>
-        <p class="text-xs text-neutral-400">เฉพาะผู้ดูแลเพื่อสร้างห้อง Lobby</p>
+        <p class="text-xs text-neutral-400">เฉพาะผู้ดูแลเพื่อสร้างห้องหรือจัดการเกม</p>
       </div>
       <form onsubmit="handleAdminLogin(event)" class="space-y-4">
         <div>
@@ -146,23 +154,30 @@
     </div>
   </div>
 
-  <!-- Modal สำหรับ Admin สุ่มสร้าง Lobby 4 หลัก -->
+  <!-- Modal สำหรับ Admin สุ่มสร้าง Lobby หรือเข้าห้องเดิมที่ยังไม่จบ -->
   <div id="adminCreateRoomModal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden z-50">
-    <div class="bg-neutral-900 border border-red-500 rounded-2xl w-full max-w-md p-6 text-center shadow-2xl">
-      <div class="text-4xl mb-2">🏛️</div>
-      <h3 class="text-xl font-bold text-white">สร้างห้อง Lobby กลาง</h3>
-      <p class="text-xs text-neutral-400 mt-1 mb-6">กดปุ่มเพื่อสุ่มเลขห้อง 4 หลัก และเปิดรับผู้เล่นเข้า Lobby</p>
+    <div class="bg-neutral-900 border border-red-500 rounded-2xl w-full max-w-md p-6 text-center shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="text-4xl mb-2">🏛️️</div>
+      <h3 class="text-xl font-bold text-white">จัดการห้อง Lobby กลาง</h3>
+      
+      <!-- ห้องเดิมที่ Admin เคยสร้างและยังไม่จบ -->
+      <div id="adminActiveRoomsContainer" class="my-4 text-left hidden">
+        <label class="block text-xs font-semibold text-neutral-300 mb-1.5">🔄 ห้องเดิมที่กำลังดำเนินการอยู่:</label>
+        <div id="adminActiveRoomsList" class="space-y-1.5"></div>
+      </div>
 
-      <div class="bg-neutral-950 border border-neutral-800 rounded-xl p-5 mb-6">
-        <div class="text-xs text-neutral-400 uppercase tracking-widest mb-1">เลขห้อง Lobby ที่สุ่มได้</div>
-        <div id="generatedRoomCode" class="text-5xl font-mono font-extrabold text-red-500 tracking-widest">----</div>
+      <p class="text-xs text-neutral-400 mt-2 mb-4">หรือสุ่มเลขเพื่อสร้างห้อง Lobby ใหม่</p>
+
+      <div class="bg-neutral-950 border border-neutral-800 rounded-xl p-4 mb-5">
+        <div class="text-xs text-neutral-400 uppercase tracking-widest mb-1">เลขห้องใหม่ที่สุ่มได้</div>
+        <div id="generatedRoomCode" class="text-4xl font-mono font-extrabold text-red-500 tracking-widest">----</div>
       </div>
 
       <div class="flex gap-3">
-        <button type="button" onclick="generateRandomRoomCode()" class="w-1/2 bg-neutral-800 hover:bg-neutral-700 text-white font-medium py-3 rounded-xl transition-colors text-sm">
+        <button type="button" onclick="generateRandomRoomCode()" class="w-1/2 bg-neutral-800 hover:bg-neutral-700 text-white font-medium py-2.5 rounded-xl transition-colors text-sm">
           🎲 สุ่มเลขใหม่
         </button>
-        <button type="button" id="btnConfirmCreate" onclick="confirmCreateRoom()" class="w-1/2 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-red-600/30 text-sm">
+        <button type="button" id="btnConfirmCreate" onclick="confirmCreateRoom()" class="w-1/2 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg text-sm">
           เปิด Lobby ห้องนี้
         </button>
       </div>
@@ -196,6 +211,75 @@
     function closeAdminModal() { document.getElementById('adminModal').classList.add('hidden'); }
     function closePlayerModal() { document.getElementById('playerRoomModal').classList.add('hidden'); }
 
+    // ฟังก์ชันจัดการประวัติห้องที่เคยเข้าร่วม (บันทึกลง LocalStorage)
+    function saveRoomHistory(roomCode) {
+      let history = JSON.parse(localStorage.getItem('roomHistory')) || [];
+      if (!history.includes(roomCode)) {
+        history.push(roomCode);
+        localStorage.setItem('roomHistory', JSON.stringify(history));
+      }
+    }
+
+    // โหลดห้องที่เคยเข้าร่วมและตรวจสถานะว่ายังไม่จบเกม
+    async function loadActiveRecentRooms(targetContainerId, targetListId, isForAdmin = false) {
+      const history = JSON.parse(localStorage.getItem('roomHistory')) || [];
+      if (history.length === 0) return;
+
+      const container = document.getElementById(targetContainerId);
+      const list = document.getElementById(targetListId);
+      list.innerHTML = '<span class="text-[11px] text-neutral-500">กำลังตรวจสอบสถานะห้อง...</span>';
+      container.classList.remove('hidden');
+
+      let activeCount = 0;
+      list.innerHTML = '';
+
+      for (const code of history) {
+        try {
+          const doc = await db.collection('rooms').doc(code).get();
+          // แสดงเฉพาะห้องที่มีจริงและสถานะไม่ใช่ ended
+          if (doc.exists && doc.data().status !== 'ended') {
+            activeCount++;
+            const item = document.createElement('div');
+            item.className = "flex items-center justify-between p-2 rounded-lg bg-neutral-950 border border-neutral-800 hover:border-sky-500/50 transition-all text-xs";
+            item.innerHTML = `
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="font-mono font-bold text-white text-sm">ห้อง ${code}</span>
+                <span class="text-neutral-500">(${doc.data().status === 'playing' ? 'กำลังเล่น' : 'รอเริ่ม'})</span>
+              </div>
+              <button type="button" onclick="selectExistingRoom('${code}', ${isForAdmin})" class="bg-neutral-800 hover:bg-sky-500 hover:text-black font-semibold px-2.5 py-1 rounded text-[11px] transition-all">
+                กลับเข้าห้องนี้
+              </button>
+            `;
+            list.appendChild(item);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      if (activeCount === 0) {
+        container.classList.add('hidden');
+      }
+    }
+
+    // คลิกเลือกเข้าห้องเดิม
+    function selectExistingRoom(roomCode, isForAdmin) {
+      if (isForAdmin) {
+        const adminData = {
+          uid: "admin_master",
+          name: "Admin Master",
+          role: "admin",
+          career: "ผู้ดูแลระบบ",
+          roomId: roomCode
+        };
+        localStorage.setItem('gameUser', JSON.stringify(adminData));
+        window.location.href = "game.html";
+      } else {
+        document.getElementById('inputRoomCode').value = roomCode;
+      }
+    }
+
     // 1. Google Login
     async function loginWithGoogle() {
       try {
@@ -210,6 +294,7 @@
           phone: user.phoneNumber || "-",
           role: "player"
         };
+        loadActiveRecentRooms('recentRoomsContainer', 'recentRoomsList', false);
         document.getElementById('playerRoomModal').classList.remove('hidden');
       } catch (err) {
         alert("Google Login ผิดพลาด: " + err.message);
@@ -227,10 +312,11 @@
         email: document.getElementById('guestEmail').value.trim() || "-",
         role: "player"
       };
+      loadActiveRecentRooms('recentRoomsContainer', 'recentRoomsList', false);
       document.getElementById('playerRoomModal').classList.remove('hidden');
     }
 
-    // 3. ผู้เล่นกดยืนยันอาชีพและเลขห้อง 4 หลัก
+    // 3. ยืนยันเข้าห้องของผู้เล่น
     async function joinRoomSubmit(e) {
       e.preventDefault();
       const career = document.getElementById('playerCareer').value;
@@ -249,29 +335,8 @@
         const roomDocRef = db.collection('rooms').doc(roomCode);
         const roomSnap = await roomDocRef.get();
 
-        if (!roomSnap.exists) {
-          alert("ไม่มีห้องนี้");
-          btn.disabled = false;
-          btn.innerText = "เข้าสู่ Lobby";
-          return;
-        }
-
-        const roomData = roomSnap.data();
-        if (roomData.status === 'playing') {
-          alert("ห้องนี้เริ่มเล่นเกมไปแล้ว ไม่สามารถเข้าได้");
-          btn.disabled = false;
-          btn.innerText = "เข้าสู่ Lobby";
-          return;
-        }
-
-        const playersSnap = await roomDocRef.collection('players').get();
-        const players = [];
-        playersSnap.forEach(d => players.push(d.data()));
-        const isExisting = players.some(p => p.uid === tempPlayerProfile.uid);
-        const playerCount = players.filter(p => p.role === 'player').length;
-
-        if (!isExisting && playerCount >= 20) {
-          alert("⛔ ผู้เล่นเต็มแล้ว (ครบ 20 คน) กรุณารอจบเกมก่อนนะครับ");
+        if (!roomSnap.exists || roomSnap.data().status === 'ended') {
+          alert("ไม่มีห้องนี้ หรือห้องนี้จบเกมไปแล้ว");
           btn.disabled = false;
           btn.innerText = "เข้าสู่ Lobby";
           return;
@@ -279,94 +344,76 @@
 
         tempPlayerProfile.career = career;
         tempPlayerProfile.roomId = roomCode;
+        saveRoomHistory(roomCode);
+
         localStorage.setItem('gameUser', JSON.stringify(tempPlayerProfile));
-        window.location.href = "lobby.html";
+        
+        // หากเกมกำลังเล่นอยู่ ให้พาเข้า game.html ทันที ถ้ายัง ให้เข้า lobby.html
+        if (roomSnap.data().status === 'playing') {
+          window.location.href = "game.html";
+        } else {
+          window.location.href = "lobby.html";
+        }
 
       } catch (err) {
-        console.error("Join room error:", err);
         alert("เกิดข้อผิดพลาดในการตรวจสอบห้อง: " + err.message);
         btn.disabled = false;
         btn.innerText = "เข้าสู่ Lobby";
       }
     }
 
-    // 4. Admin Login (รหัส 9999)
+    // 4. Admin Login
     function handleAdminLogin(e) {
       e.preventDefault();
       const pw = document.getElementById('adminPassword').value;
       if (pw === "9999") {
         closeAdminModal();
         generateRandomRoomCode();
+        loadActiveRecentRooms('adminActiveRoomsContainer', 'adminActiveRoomsList', true);
         document.getElementById('adminCreateRoomModal').classList.remove('hidden');
       } else {
         alert("รหัสผ่านไม่ถูกต้อง!");
       }
     }
 
-    // สุ่มเลขห้อง 4 หลัก (1000 - 9999)
     function generateRandomRoomCode() {
       currentAdminRoomCode = Math.floor(1000 + Math.random() * 9000).toString();
       document.getElementById('generatedRoomCode').innerText = currentAdminRoomCode;
     }
 
-    // 5. Admin กดยืนยันเปิดห้อง Lobby และพา Admin เข้า Lobby ทันที
     async function confirmCreateRoom() {
-      const btn = document.getElementById('btnConfirmCreate');
-      if (btn) {
-        btn.disabled = true;
-        btn.innerText = "กำลังสร้างห้อง...";
-      }
-
       const roomCode = document.getElementById('generatedRoomCode').innerText.trim();
-      if (!roomCode || roomCode === "----") {
-        alert("กรุณาสุ่มเลขห้องก่อน");
-        if (btn) { btn.disabled = false; btn.innerText = "เปิด Lobby ห้องนี้"; }
-        return;
-      }
+      const btn = document.getElementById('btnConfirmCreate');
+      btn.disabled = true;
+      btn.innerText = "กำลังสร้างห้อง...";
 
       try {
         const roomDocRef = db.collection('rooms').doc(roomCode);
-        
-        // 1. สร้างเอกสารห้องใหม่บน Firestore
         await roomDocRef.set({
           roomId: roomCode,
           status: 'waiting',
+          isTimePaused: false,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // 2. จัดเตรียมข้อมูล Admin
         const adminData = {
-          uid: "admin_" + Math.random().toString(36).substring(2, 7),
+          uid: "admin_master",
           name: "Admin Master",
           phone: "-",
           email: "admin@gamemaster.io",
           career: "ผู้ดูแลระบบ",
           role: "admin",
-          roomId: roomCode,
-          isReady: true
+          roomId: roomCode
         };
 
-        // 3. บันทึก Admin เข้าสู่ collection players ของห้องนั้น
-        await roomDocRef.collection('players').doc(adminData.uid).set({
-          uid: adminData.uid,
-          name: adminData.name,
-          career: adminData.career,
-          role: adminData.role,
-          isReady: true,
-          joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        // 4. บันทึก Session และนำทางไปหน้า lobby.html
+        saveRoomHistory(roomCode);
         localStorage.setItem('gameUser', JSON.stringify(adminData));
         window.location.href = "lobby.html";
 
       } catch (err) {
-        console.error("Create room error:", err);
-        alert("ไม่สามารถสร้างห้องได้ (โปรดตรวจ Firestore Rules): " + err.message);
-        if (btn) {
-          btn.disabled = false;
-          btn.innerText = "เปิด Lobby ห้องนี้";
-        }
+        alert("สร้างห้องไม่สำเร็จ: " + err.message);
+        btn.disabled = false;
+        btn.innerText = "เปิด Lobby ห้องนี้";
       }
     }
   </script>
