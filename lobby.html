@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ห้องรอเล่นเกม - Lobby</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap');
+    body { font-family: 'Kanit', sans-serif; }
+    /* ปรับแต่ง scrollbar ให้เข้ากับธีมดำ */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #121212; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-black text-white min-h-screen flex flex-col justify-between">
+
+  <!-- Header แถบด้านบน -->
+  <header class="w-full bg-neutral-950 border-b border-neutral-800 px-6 py-4 flex justify-between items-center z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-3 h-3 rounded-full bg-sky-400 animate-pulse"></div>
+      <h1 class="text-lg md:text-xl font-bold tracking-wide">
+        FINANCIAL <span class="text-red-500">SIMULATOR</span> <span class="text-neutral-400 font-normal">| ห้องรอเล่น</span>
+      </h1>
+    </div>
+    
+    <!-- ข้อมูลผู้ใช้งานปัจจุบัน -->
+    <div class="flex items-center gap-4 text-sm">
+      <div class="text-right hidden sm:block">
+        <div id="displayUserName" class="font-semibold text-white">ผู้เล่น</div>
+        <div id="displayUserRole" class="text-xs text-neutral-400">Player</div>
+      </div>
+      <button onclick="handleLogout()" class="text-xs border border-neutral-700 hover:border-red-500 px-3 py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
+        ออกจากห้อง
+      </button>
+    </div>
+  </header>
+
+  <!-- เนื้อหาหลัก (Main Layout 2 คอลัมน์) -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- คอลัมน์ซ้าย: รายชื่อผู้เล่น (Player List) -->
+    <section class="lg:col-span-2 bg-neutral-900 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between shadow-lg">
+      <div>
+        <div class="flex justify-between items-center pb-4 border-b border-neutral-800 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <span>รายชื่อผู้เล่นในห้อง</span>
+              <span id="playerCounter" class="bg-neutral-800 text-sky-400 text-xs px-2.5 py-0.5 rounded-full font-mono">0 / 20</span>
+            </h2>
+            <p class="text-xs text-neutral-400 mt-0.5">จำกัดผู้เล่นสูงสุด 20 คนต่อหนึ่งรอบ</p>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-neutral-400">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> พร้อม</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> ยังไม่พร้อม</span>
+          </div>
+        </div>
+
+        <!-- รายการผู้เล่น (Scrollable Grid) -->
+        <div id="playerListContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[460px] overflow-y-auto pr-1">
+          <!-- ข้อมูลจะถูก render ผ่าน JavaScript -->
+        </div>
+      </div>
+
+      <!-- แถบกดความพร้อม / ควบคุมห้อง -->
+      <div class="pt-6 border-t border-neutral-800 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <!-- ปุ่มพร้อมสำหรับ Player -->
+        <button id="readyToggleBtn" onclick="toggleReadyStatus()" 
+                class="w-full sm:w-auto px-8 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-400 text-black">
+          <span id="readyBtnDot" class="w-2.5 h-2.5 rounded-full bg-black"></span>
+          <span id="readyBtnText">กดปุ่ม: พร้อมเล่น</span>
+        </button>
+
+        <!-- ส่วนควบคุมของ Admin (ซ่อนเป็นค่าเริ่มต้น) -->
+        <div id="adminPanel" class="w-full sm:w-auto hidden flex-col sm:flex-row items-center gap-3">
+          <span class="text-xs text-red-400 font-semibold uppercase tracking-wider">[ แผงควบคุม GM 🥸 ]</span>
+          <button onclick="startGameByAdmin()" 
+                  class="w-full sm:w-auto bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-red-600/30 flex items-center justify-center gap-2">
+            <span>เริ่มเกมทันที</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"></path></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- คอลัมน์ขวา: กล่องแชทสด (Chat Room) -->
+    <section class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between shadow-lg h-[550px] lg:h-auto">
+      <div>
+        <h2 class="text-base font-bold text-white pb-3 border-b border-neutral-800 flex items-center gap-2">
+          <span>ห้องแชท</span>
+          <span class="text-xs font-normal text-neutral-400">(พูดคุยก่อนเริ่มเกม)</span>
+        </h2>
+        
+        <!-- ข้อความแชท -->
+        <div id="chatMessages" class="mt-4 space-y-3 overflow-y-auto max-h-[380px] pr-2 text-sm">
+          <div class="text-xs text-neutral-500 text-center py-1">ยินดีต้อนรับสู่ห้องรอเล่นเกม</div>
+        </div>
+      </div>
+
+      <!-- ช่องพิมพ์ข้อความ -->
+      <form onsubmit="handleSendMessage(event)" class="mt-4 pt-3 border-t border-neutral-800 flex gap-2">
+        <input type="text" id="chatInput" placeholder="พิมพ์ข้อความที่นี่..." 
+               class="flex-1 bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-sky-400">
+        <button type="submit" class="bg-sky-500 hover:bg-sky-400 text-black px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors">
+          ส่ง
+        </button>
+      </form>
+    </section>
+
+  </main>
+
+  <footer class="w-full py-3 bg-neutral-950 border-t border-neutral-900 text-center text-xs text-neutral-600">
+    Financial Simulator Game © ระบบห้องรอเล่น
+  </footer>
+
+  <script>
+    // ตรวจสอบ Session จาก Login
+    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {
+      name: "ผู้เล่นทดสอบ",
+      role: "player",
+      career: "พนักงานบริษัท"
+    };
+
+    // อัปเดตข้อมูลบน Header
+    document.getElementById('displayUserName').innerText = currentUser.name;
+    document.getElementById('displayUserRole').innerText = currentUser.role.toUpperCase() + (currentUser.role === 'admin' ? ' 🥸' : '');
+
+    // แสดงปุ่มแอดมินถ้าสิทธิ์เป็น admin
+    if (currentUser.role === 'admin') {
+      document.getElementById('adminPanel').classList.remove('hidden');
+      document.getElementById('adminPanel').classList.add('flex');
+    }
+
+    // รายชื่อผู้เล่นจำลอง (รวมสูงสุด 20 คน)
+    let players = [
+      { id: 1, name: currentUser.name, career: currentUser.career, isReady: false, isSelf: true },
+      { id: 2, name: "สมชาย นักเทรด", career: "ฟรีแลนซ์", isReady: true, isSelf: false },
+      { id: 3, name: "วิชัย อสังหา", career: "วิศวกร", isReady: false, isSelf: false },
+      { id: 4, name: "พิมพ์ใจ คลินิก", career: "แพทย์", isReady: true, isSelf: false },
+    ];
+
+    // ฟังก์ชันวาดรายชื่อผู้เล่นลงหน้าจอ
+    function renderPlayers() {
+      const container = document.getElementById('playerListContainer');
+      const counter = document.getElementById('playerCounter');
+      container.innerHTML = '';
+      counter.innerText = `${players.length} / 20`;
+
+      players.forEach(p => {
+        const card = document.createElement('div');
+        card.className = `p-3.5 rounded-xl border flex items-center justify-between ${
+          p.isSelf ? 'border-sky-500/50 bg-neutral-950' : 'border-neutral-800 bg-neutral-950/50'
+        }`;
+
+        // สีของสถานะ (🟢 เขียว = พร้อม, 🟡 เหลือง = ยังไม่พร้อม)
+        const statusColor = p.isReady ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-amber-400 shadow-[0_0_8px_#f59e0b]';
+        const statusText = p.isReady ? 'พร้อมแล้ว' : 'กำลังเตรียมตัว';
+
+        card.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-3 h-3 rounded-full ${statusColor}"></span>
+            <div>
+              <div class="font-semibold text-sm text-white flex items-center gap-1.5">
+                ${p.name} ${p.isSelf ? '<span class="text-[10px] text-sky-400 font-normal border border-sky-400/40 rounded px-1">คุณ</span>' : ''}
+              </div>
+              <div class="text-xs text-neutral-400">${p.career}</div>
+            </div>
+          </div>
+          <span class="text-xs font-medium ${p.isReady ? 'text-emerald-400' : 'text-amber-400'}">${statusText}</span>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // ฟังก์ชันสลับสถานะ "พร้อม"
+    function toggleReadyStatus() {
+      const self = players.find(p => p.isSelf);
+      if (!self) return;
+
+      self.isReady = !self.isReady;
+      
+      const btn = document.getElementById('readyToggleBtn');
+      const btnText = document.getElementById('readyBtnText');
+      const btnDot = document.getElementById('readyBtnDot');
+
+      if (self.isReady) {
+        btn.className = "w-full sm:w-auto px-8 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black";
+        btnText.innerText = "สถานะ: พร้อมแล้ว (กดยกเลิก)";
+        btnDot.className = "w-2.5 h-2.5 rounded-full bg-black";
+        addSystemMessage(`${currentUser.name} พร้อมเล่นแล้ว! 🟢`);
+      } else {
+        btn.className = "w-full sm:w-auto px-8 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-400 text-black";
+        btnText.innerText = "กดปุ่ม: พร้อมเล่น";
+        btnDot.className = "w-2.5 h-2.5 rounded-full bg-black";
+        addSystemMessage(`${currentUser.name} ยกเลิกสถานะพร้อม 🟡`);
+      }
+      renderPlayers();
+    }
+
+    // ฟังก์ชันส่งข้อความแชท
+    function handleSendMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const chatBox = document.getElementById('chatMessages');
+      const msgElem = document.createElement('div');
+      msgElem.className = "bg-neutral-950 border border-neutral-800 rounded-lg p-2.5";
+      msgElem.innerHTML = `
+        <div class="flex justify-between items-center text-xs mb-1">
+          <span class="font-bold ${currentUser.role === 'admin' ? 'text-red-400' : 'text-sky-400'}">${currentUser.name}</span>
+          <span class="text-neutral-500">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+        </div>
+        <p class="text-neutral-200 text-sm break-words">${text}</p>
+      `;
+      chatBox.appendChild(msgElem);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      input.value = '';
+    }
+
+    function addSystemMessage(text) {
+      const chatBox = document.getElementById('chatMessages');
+      const msg = document.createElement('div');
+      msg.className = "text-center text-xs text-neutral-400 py-1 italic";
+      msg.innerText = text;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // คำสั่งแอดมินเริ่มเกม
+    function startGameByAdmin() {
+      const unreadyCount = players.filter(p => !p.isReady).length;
+      if (unreadyCount > 0) {
+        const confirmStart = confirm(`ยังมีผู้เล่นอีก ${unreadyCount} คนที่ยังไม่พร้อม คุณต้องการเริ่มเกมทันทีหรือไม่?`);
+        if (!confirmStart) return;
+      }
+      alert("Admin สั่งเริ่มเกม! กำลังพาผู้เล่นทุกคนไปยังหน้ากระดานเกม...");
+      window.location.href = "game.html";
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('currentUser');
+      window.location.href = "login.html";
+    }
+
+    // เริ่มต้นแสดงผล
+    renderPlayers();
+  </script>
+</body>
+</html>
