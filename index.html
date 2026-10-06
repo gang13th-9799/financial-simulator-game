@@ -84,7 +84,7 @@
 
   <footer class="w-full py-4 border-t border-neutral-900 bg-neutral-950/80 flex justify-between items-center px-8 z-10">
     <div class="text-xs text-neutral-500">รองรับผู้เล่นสูงสุด 20 คนพร้อมกันจากทุกที่</div>
-    <button onclick="openAdminModal()" class="w-10 h-10 flex items-center justify-center text-2xl rounded-full bg-neutral-900 border border-neutral-800 hover:border-red-500 transition-all">
+    <button onclick="openAdminModal()" title="เข้าสู่ระบบ Admin" class="w-10 h-10 flex items-center justify-center text-2xl rounded-full bg-neutral-900 border border-neutral-800 hover:border-red-500 transition-all">
       🥸
     </button>
   </footer>
@@ -111,7 +111,7 @@
     </div>
   </div>
 
-  <!-- Firebase Scripts (v9 Compat) -->
+  <!-- Firebase Scripts -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -171,16 +171,16 @@
       await enterLobby(userData);
     }
 
-    // 3. Admin Login (รหัสผ่าน: 9999)
+    // 3. Admin Login (รหัสผ่าน 9999)
     async function loginAsAdmin(e) {
       e.preventDefault();
       const pw = document.getElementById('adminPassword').value;
       if (pw === "9999") {
         const adminData = {
-          uid: "admin_master",
-          name: "Game Master 🥸",
+          uid: "admin_" + Math.random().toString(36).substring(2, 7),
+          name: "Admin Master",
           phone: "-",
-          email: "admin@gamemaster.io",
+          email: "admin@system.io",
           career: "ผู้ดูแลระบบ",
           role: "admin"
         };
@@ -190,22 +190,20 @@
       }
     }
 
-    // ตรวจสอบโควตา 20 คนก่อนเข้าห้อง
+    // ตรวจสอบโควตาผู้เล่นและนำเข้าห้อง Lobby เดียวกัน
     async function enterLobby(user) {
       try {
-        if (user.role === 'admin') {
-          localStorage.setItem('gameUser', JSON.stringify(user));
-          window.location.href = "lobby.html";
-          return;
-        }
-
+        // ดึงรายชื่อคนในห้อง
         const playersSnapshot = await roomDoc.collection('players').get();
         const currentPlayers = [];
         playersSnapshot.forEach(doc => currentPlayers.push(doc.data()));
 
-        const isExistingPlayer = currentPlayers.some(p => p.uid === user.uid);
+        // นับเฉพาะผู้เล่น (role: player)
+        const activePlayersCount = currentPlayers.filter(p => p.role === 'player').length;
+        const isExistingUser = currentPlayers.some(p => p.uid === user.uid);
 
-        if (!isExistingPlayer && currentPlayers.length >= 20) {
+        // หากผู้เล่นใหม่จะเข้าแต่ห้องเต็ม 20 คนแล้ว ให้ระงับทันที (Admin ยกเว้น)
+        if (user.role === 'player' && !isExistingUser && activePlayersCount >= 20) {
           alert("⛔ ผู้เล่นเต็มแล้ว (ครบ 20 คน) กรุณารอจบเกมก่อนนะครับ");
           if (firebase.auth().currentUser) {
             await firebase.auth().signOut();
@@ -216,8 +214,8 @@
         localStorage.setItem('gameUser', JSON.stringify(user));
         window.location.href = "lobby.html";
       } catch (err) {
-        console.error("เกิดข้อผิดพลาดในการตรวจสอบห้อง:", err);
-        alert("ไม่สามารถเข้าห้องได้ กรุณาลองใหม่อีกครั้ง");
+        console.error("เกิดข้อผิดพลาดในการเข้าห้อง:", err);
+        alert("ไม่สามารถเชื่อมต่อห้องได้ กรุณาลองใหม่อีกครั้ง");
       }
     }
   </script>
