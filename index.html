@@ -111,13 +111,12 @@
     </div>
   </div>
 
-  <!-- Firebase Scripts -->
+  <!-- Firebase Scripts (v9 Compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script>
-    // Config ของคุณที่ใส่เรียบร้อยแล้ว
     const firebaseConfig = {
       apiKey: "AIzaSyAFzJ6nZGBwMmuqbAiFeIHOhoxigj-Bw2U",
       authDomain: "family-fso.firebaseapp.com",
@@ -130,6 +129,8 @@
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const db = firebase.firestore();
+    const roomDoc = db.collection('rooms').doc('main_room');
 
     function openAdminModal() { document.getElementById('adminModal').classList.remove('hidden'); }
     function closeAdminModal() { document.getElementById('adminModal').classList.add('hidden'); }
@@ -189,9 +190,38 @@
       }
     }
 
+    // ตรวจสอบโควตา 20 คนก่อนอนุญาตให้เข้าห้อง
     async function enterLobby(user) {
-      localStorage.setItem('gameUser', JSON.stringify(user));
-      window.location.href = "lobby.html";
+      try {
+        // Admin เข้าได้เสมอ ไม่ถูกจำกัดสิทธิ์
+        if (user.role === 'admin') {
+          localStorage.setItem('gameUser', JSON.stringify(user));
+          window.location.href = "lobby.html";
+          return;
+        }
+
+        // ตรวจสอบจำนวนผู้เล่นปัจจุบันจาก Firestore
+        const playersSnapshot = await roomDoc.collection('players').get();
+        const currentPlayers = [];
+        playersSnapshot.forEach(doc => currentPlayers.push(doc.data()));
+
+        const isExistingPlayer = currentPlayers.some(p => p.uid === user.uid);
+
+        // หากผู้เล่นใหม่พยายามเข้า แต่มีครบ 20 คนแล้ว ให้แจ้งเตือนและสกัดกั้น
+        if (!isExistingPlayer && currentPlayers.length >= 20) {
+          alert("⛔ ผู้เล่นเต็มแล้ว (ครบ 20 คน) กรุณารอจบเกมก่อนนะครับ");
+          if (firebase.auth().currentUser) {
+            await firebase.auth().signOut();
+          }
+          return;
+        }
+
+        localStorage.setItem('gameUser', JSON.stringify(user));
+        window.location.href = "lobby.html";
+      } catch (err) {
+        console.error("เกิดข้อผิดพลาดในการตรวจสอบห้อง:", err);
+        alert("ไม่สามารถเข้าห้องได้ กรุณาลองใหม่อีกครั้ง");
+      }
     }
   </script>
 </body>
