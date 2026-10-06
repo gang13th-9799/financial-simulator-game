@@ -56,7 +56,7 @@
         </div>
 
         <div id="playerList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[460px] overflow-y-auto pr-1">
-          <!-- ผู้เล่นจะแสดงที่นี่แบบ Realtime จากทุกเครื่อง -->
+          <!-- ผู้เล่นจะแสดงที่นี่แบบ Realtime -->
         </div>
       </div>
 
@@ -70,7 +70,7 @@
           <span id="readyText">กดปุ่ม: พร้อมเล่น</span>
         </button>
 
-        <!-- Admin เท่านั้น: ปุ่มเริ่มเกม -->
+        <!-- Admin: ปุ่มเริ่มเกม -->
         <div id="adminControls" class="w-full sm:w-auto hidden flex items-center gap-3">
           <span class="text-xs text-red-400 font-semibold">[ แผงควบคุม Admin 🥸 ]</span>
           <button onclick="adminStartGame()" 
@@ -110,13 +110,15 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script>
+    // Config ของคุณที่ใส่เรียบร้อยแล้ว
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyAFzJ6nZGBwMmuqbAiFeIHOhoxigj-Bw2U",
+      authDomain: "family-fso.firebaseapp.com",
+      projectId: "family-fso",
+      storageBucket: "family-fso.firebasestorage.app",
+      messagingSenderId: "841262550099",
+      appId: "1:841262550099:web:b2348a193c9780faf40aa6",
+      measurementId: "G-CPWT56MLC3"
     };
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -124,7 +126,7 @@
 
     const currentUser = JSON.parse(localStorage.getItem('gameUser'));
     if (!currentUser) {
-      window.location.href = "login.html";
+      window.location.href = "index.html";
     }
 
     document.getElementById('uName').innerText = currentUser.name;
@@ -137,9 +139,8 @@
     let isMyReady = false;
     const roomDoc = db.collection('rooms').doc('main_room');
 
-    // 1. ลงทะเบียนผู้เล่นเข้าสู่ฐานข้อมูล Firestore ทันทีที่เข้าหน้านี้
+    // 1. ลงทะเบียนผู้เล่น
     async function joinRoom() {
-      // ตรวจสอบห้องและผู้เล่น
       const snap = await roomDoc.collection('players').get();
       if (snap.size >= 20 && !snap.docs.some(d => d.id === currentUser.uid)) {
         alert("ห้องนี้มีผู้เล่นเต็ม 20 คนแล้ว!");
@@ -158,15 +159,13 @@
     }
     joinRoom();
 
-    // 2. ฟังความเปลี่ยนแปลงของห้อง (Realtime Listener)
-    // 2.1 ตรวจสอบว่าแอดมินสั่งเริ่มเกมหรือยัง (ทุกคนจะเด้งไป game.html ทันที)
+    // 2. ฟังความเปลี่ยนแปลงของห้อง
     roomDoc.onSnapshot(doc => {
       if (doc.exists && doc.data().status === 'playing') {
         window.location.href = "game.html";
       }
     });
 
-    // 2.2 อัปเดตรายชื่อและไฟสถานะของทุกคนบนหน้าจอ
     roomDoc.collection('players').onSnapshot(snapshot => {
       const container = document.getElementById('playerList');
       const counter = document.getElementById('playerCounter');
@@ -185,7 +184,6 @@
           isSelf ? 'border-sky-500/50 bg-neutral-950' : 'border-neutral-800 bg-neutral-950/60'
         }`;
 
-        // 🟢 เขียว = พร้อม, 🟡 เหลือง = ยังไม่พร้อม
         const statusColor = p.isReady ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-amber-400 shadow-[0_0_8px_#f59e0b]';
         const statusText = p.isReady ? 'พร้อมแล้ว' : 'กำลังเตรียมตัว';
 
@@ -204,11 +202,10 @@
         container.appendChild(card);
       });
 
-      // อัปเดตปุ่มของตัวเอง
       updateMyReadyButton();
     });
 
-    // 3. กดสลับสถานะ "พร้อม"
+    // 3. สลับสถานะพร้อม
     async function toggleReady() {
       await roomDoc.collection('players').doc(currentUser.uid).update({
         isReady: !isMyReady
@@ -261,7 +258,7 @@
       input.value = '';
     }
 
-    // 5. Admin สั่งเริ่มเกม
+    // 5. Admin เริ่มเกม
     async function adminStartGame() {
       if (confirm("ต้องการเริ่มเกมทันทีหรือไม่? ผู้เล่นทุกคนในห้องจะถูกพาเข้าหน้าเกมพร้อมกัน")) {
         await roomDoc.set({ status: 'playing' }, { merge: true });
@@ -273,7 +270,7 @@
         await roomDoc.collection('players').doc(currentUser.uid).delete();
       } catch (e) {}
       localStorage.removeItem('gameUser');
-      window.location.href = "login.html";
+      window.location.href = "index.html";
     }
   </script>
 </body>
