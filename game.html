@@ -40,7 +40,10 @@
           <span>เงินสด: <b id="headerCash" class="text-emerald-400">฿0</b></span>
           <span class="text-neutral-600">|</span>
           <span class="text-amber-400">⏳ <b id="gameTimelineDisplay">ปี 2000 (วันที่ 1/360)</b></span>
-          <span id="timePauseIndicator" class="hidden bg-amber-500/20 text-amber-400 px-1.5 rounded text-[10px] font-bold">⏸ หยุดเวลาชั่วคราว</span>
+          <!-- ป้ายแสดงสถานะเวลา -->
+          <span id="timePauseIndicator" class="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-500/40 animate-pulse">
+            ⏸ ยังไม่เริ่มเกม (รอ Admin กด Play)
+          </span>
         </div>
       </div>
     </div>
@@ -48,7 +51,7 @@
     <!-- ส่วนควบคุมเวลาเฉพาะ ADMIN (Play / Pause / Stop) -->
     <div id="adminTimeControls" class="hidden items-center gap-2 bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-xl">
       <span class="text-[11px] text-neutral-400 mr-1 hidden sm:inline font-sans">ควบคุมเกม:</span>
-      <button onclick="adminPlayGame()" title="ดำเนินเกมต่อ (Play)" class="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-black flex items-center justify-center font-bold text-sm transition-all shadow-md">
+      <button onclick="adminPlayGame()" title="เริ่มเกม/ดำเนินต่อ (Play)" class="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-black flex items-center justify-center font-bold text-sm transition-all shadow-md">
         ▶
       </button>
       <button onclick="adminPauseGame()" title="หยุดเวลาชั่วคราว (Pause)" class="w-8 h-8 rounded-lg bg-amber-500 hover:bg-amber-400 text-black flex items-center justify-center font-bold text-sm transition-all shadow-md">
@@ -77,7 +80,6 @@
         <span>🥸</span> รายชื่อผู้เล่น (Admin)
       </button>
 
-      <!-- Tab 1: ข้อมูลส่วนตัว -->
       <button onclick="switchTab('careerTab')" id="btn-careerTab" class="tab-btn px-3.5 py-2 rounded-xl font-semibold border border-transparent text-neutral-400 hover:text-white flex items-center gap-1.5 whitespace-nowrap">
         <span>💼</span> 1. ข้อมูลส่วนตัว
       </button>
@@ -522,13 +524,14 @@
       businesses: []
     };
 
-    let isTimePaused = false;
+    // ตั้งค่าเริ่มต้น: เวลาเกมหยุดนิ่ง (true) จนกว่า Admin จะกด Play
+    let isTimePaused = true;
     let timeInterval = null;
     let currentGameDay = 1;
     let startHistoricalYear = 2000;
     let roomPlayers = [];
 
-    // ==================== 1. ระบบเวลาจำลอง & PLAY/PAUSE/STOP ====================
+    // ==================== 1. ระบบเวลาจำลอง (เริ่มนับเมื่อ Admin กด Play) ====================
     function initGameTimeline() {
       const pastOffset = Math.floor(Math.random() * 11) + 20; // ย้อนหลัง 20 - 30 ปี
       startHistoricalYear = new Date().getFullYear() - pastOffset;
@@ -536,23 +539,23 @@
       updateTimelineDisplay();
       startTimeLoop();
 
-      // ฟังสถานะห้องแบบ Realtime จาก Firestore
+      // ดึงและฟังสถานะห้องแบบ Realtime จาก Firestore
       roomDoc.onSnapshot(doc => {
         if (!doc.exists) return;
         const data = doc.data();
 
-        // หยุด/ดำเนินเวลา (Pause / Play)
-        if (data.isTimePaused !== undefined) {
-          isTimePaused = data.isTimePaused;
-          const indicator = document.getElementById('timePauseIndicator');
-          if (isTimePaused) {
-            indicator.classList.remove('hidden');
-          } else {
-            indicator.classList.add('hidden');
-          }
+        // ตรวจจับสถานะเวลา (ถ้าเป็น undefined หรือ true ให้ถือว่าหยุดนิ่งอยู่)
+        isTimePaused = (data.isTimePaused !== false);
+
+        const indicator = document.getElementById('timePauseIndicator');
+        if (isTimePaused) {
+          indicator.classList.remove('hidden');
+          indicator.innerText = "⏸ ยังไม่เริ่มเกม (รอ Admin กด Play)";
+        } else {
+          indicator.classList.add('hidden');
         }
 
-        // ตรวจจับคำสั่งจบเกม (Stop) -> สั่งเปลี่ยนหน้าไป summary.html
+        // ตรวจจับคำสั่งจบเกม (Stop) -> เปลี่ยนหน้าไป summary.html
         if (data.status === 'ended') {
           showGameSummary();
         }
@@ -562,6 +565,7 @@
     function startTimeLoop() {
       if (timeInterval) clearInterval(timeInterval);
       timeInterval = setInterval(() => {
+        // เวลาจะเดินเฉพาะเมื่อ Admin กด Play (isTimePaused === false)
         if (!isTimePaused) {
           currentGameDay += 1;
           updateTimelineDisplay();
@@ -587,15 +591,17 @@
       document.getElementById('gameTimelineDisplay').innerText = `ปี ${activeYear} (วันที่ ${dayOfYear}/360)`;
     }
 
-    // คำสั่ง Admin ควบคุมเวลา
+    // คำสั่ง Admin: กด Play เพื่อเริ่มเวลาเกม
     async function adminPlayGame() {
       await roomDoc.update({ isTimePaused: false });
     }
 
+    // คำสั่ง Admin: กด Pause เพื่อหยุดเวลาชั่วคราว
     async function adminPauseGame() {
       await roomDoc.update({ isTimePaused: true });
     }
 
+    // คำสั่ง Admin: กด Stop เพื่อจบเกม
     async function adminConfirmStopGame() {
       const confirmed = confirm("⚠️ ต้องการจบเกมใช่หรือไม่?\nหากกดตกลง เกมจะสิ้นสุดลงและพาผู้เล่นทุกคนไปยังหน้าสรุปผลทันที");
       if (confirmed) {
@@ -620,7 +626,6 @@
         }
       }
 
-      // รวบรวมข้อมูล Payload ทั้งหมดส่งไปยังหน้า summary.html
       const summaryPayload = {
         playerName: currentUser.name,
         playerCareer: currentUser.career,
