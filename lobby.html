@@ -60,19 +60,22 @@
         </div>
       </div>
 
-      <!-- แถบด้านล่าง: ปุ่มพร้อม / ปุ่มเริ่มเกมของ Admin -->
+      <!-- แถบด้านล่าง: ปุ่มพร้อม / แผงควบคุม Admin -->
       <div class="pt-6 border-t border-neutral-800 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         
-        <!-- ผู้เล่น: สลับสถานะพร้อม -->
+        <!-- ปุ่มพร้อมสำหรับผู้เล่น -->
         <button id="readyBtn" onclick="toggleReady()" 
                 class="w-full sm:w-auto px-8 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-400 text-black">
           <span id="readyDot" class="w-2.5 h-2.5 rounded-full bg-black"></span>
           <span id="readyText">กดปุ่ม: พร้อมเล่น</span>
         </button>
 
-        <!-- Admin: ปุ่มเริ่มเกม -->
-        <div id="adminControls" class="w-full sm:w-auto hidden flex items-center gap-3">
-          <span class="text-xs text-red-400 font-semibold">[ แผงควบคุม Admin 🥸 ]</span>
+        <!-- Admin Controls -->
+        <div id="adminControls" class="w-full sm:w-auto hidden flex flex-wrap items-center gap-2">
+          <button onclick="resetRoomForNewGame()" 
+                  class="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-semibold px-3 py-3 rounded-xl transition-all border border-neutral-700">
+            ล้างห้อง (เริ่มรอบใหม่)
+          </button>
           <button onclick="adminStartGame()" 
                   class="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-red-600/30 flex items-center justify-center gap-2">
             <span>เริ่มเกมทุกคน</span>
@@ -83,14 +86,14 @@
       </div>
     </section>
 
-    <!-- ช่องแชทกลางห้อง -->
+    <!-- ห้องแชทสด -->
     <section class="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between shadow-lg h-[550px] lg:h-auto">
       <div>
         <h2 class="text-base font-bold text-white pb-3 border-b border-neutral-800">
           ห้องแชทสด (Realtime Chat)
         </h2>
         <div id="chatBox" class="mt-4 space-y-3 overflow-y-auto max-h-[380px] pr-2 text-sm">
-          <!-- ข้อความจะไหลลงมาตรงนี้ -->
+          <!-- ข้อความแชท -->
         </div>
       </div>
 
@@ -110,7 +113,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script>
-    // Config ของคุณที่ใส่เรียบร้อยแล้ว
     const firebaseConfig = {
       apiKey: "AIzaSyAFzJ6nZGBwMmuqbAiFeIHOhoxigj-Bw2U",
       authDomain: "family-fso.firebaseapp.com",
@@ -139,33 +141,44 @@
     let isMyReady = false;
     const roomDoc = db.collection('rooms').doc('main_room');
 
-    // 1. ลงทะเบียนผู้เล่น
+    // ตรวจสอบและลงทะเบียนเข้าห้อง
     async function joinRoom() {
-      const snap = await roomDoc.collection('players').get();
-      if (snap.size >= 20 && !snap.docs.some(d => d.id === currentUser.uid)) {
-        alert("ห้องนี้มีผู้เล่นเต็ม 20 คนแล้ว!");
-        leaveRoom();
-        return;
-      }
+      try {
+        const snap = await roomDoc.collection('players').get();
+        const players = snap.docs.map(d => d.data());
+        const isExisting = players.some(p => p.uid === currentUser.uid);
 
-      await roomDoc.collection('players').doc(currentUser.uid).set({
-        uid: currentUser.uid,
-        name: currentUser.name,
-        career: currentUser.career,
-        role: currentUser.role,
-        isReady: false,
-        joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+        // ดักกรณีผู้เล่นใหม่เข้าผ่าน URL ตรงขณะที่ห้องเต็ม 20 คน
+        if (!isExisting && currentUser.role !== 'admin' && players.length >= 20) {
+          alert("⛔ ห้องนี้มีผู้เล่นเต็ม 20 คนแล้ว กรุณารอจบเกม");
+          leaveRoom();
+          return;
+        }
+
+        // เพิ่มข้อมูลลงใน Firestore
+        await roomDoc.collection('players').doc(currentUser.uid).set({
+          uid: currentUser.uid,
+          name: currentUser.name,
+          career: currentUser.career,
+          role: currentUser.role,
+          isReady: false,
+          joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+      } catch (err) {
+        console.error("Error joining room:", err);
+      }
     }
     joinRoom();
 
-    // 2. ฟังความเปลี่ยนแปลงของห้อง
+    // ฟังสถานะห้อง (หาก Admin สั่งเล่น จะย้ายไปหน้าเกมพร้อมกัน)
     roomDoc.onSnapshot(doc => {
       if (doc.exists && doc.data().status === 'playing') {
         window.location.href = "game.html";
       }
     });
 
+    // ฟังรายชื่อผู้เล่นและสถานะไฟ Realtime
     roomDoc.collection('players').onSnapshot(snapshot => {
       const container = document.getElementById('playerList');
       const counter = document.getElementById('playerCounter');
@@ -184,6 +197,7 @@
           isSelf ? 'border-sky-500/50 bg-neutral-950' : 'border-neutral-800 bg-neutral-950/60'
         }`;
 
+        // ไฟเขียว/เหลือง
         const statusColor = p.isReady ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-amber-400 shadow-[0_0_8px_#f59e0b]';
         const statusText = p.isReady ? 'พร้อมแล้ว' : 'กำลังเตรียมตัว';
 
@@ -205,7 +219,7 @@
       updateMyReadyButton();
     });
 
-    // 3. สลับสถานะพร้อม
+    // สลับความพร้อม
     async function toggleReady() {
       await roomDoc.collection('players').doc(currentUser.uid).update({
         isReady: !isMyReady
@@ -224,7 +238,7 @@
       }
     }
 
-    // 4. ระบบแชทสด
+    // แชทสด
     roomDoc.collection('chat').orderBy('time', 'asc').limitToLast(50).onSnapshot(snapshot => {
       const box = document.getElementById('chatBox');
       box.innerHTML = '';
@@ -258,11 +272,24 @@
       input.value = '';
     }
 
-    // 5. Admin เริ่มเกม
+    // แอดมินเริ่มเกม
     async function adminStartGame() {
       if (confirm("ต้องการเริ่มเกมทันทีหรือไม่? ผู้เล่นทุกคนในห้องจะถูกพาเข้าหน้าเกมพร้อมกัน")) {
         await roomDoc.set({ status: 'playing' }, { merge: true });
       }
+    }
+
+    // แอดมินรีเซ็ตห้องเพื่อเปิดรับรอบใหม่
+    async function resetRoomForNewGame() {
+      if (!confirm("คุณต้องการล้างห้องและเริ่มรอบใหม่ใช่หรือไม่? ผู้เล่นเดิมจะถูกนำออกจากห้อง")) return;
+      
+      const snap = await roomDoc.collection('players').get();
+      const batch = db.batch();
+      snap.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+
+      await roomDoc.set({ status: 'waiting' });
+      alert("รีเซ็ตห้องเรียบร้อย เปิดรับผู้เล่น 20 คนใหม่แล้ว");
     }
 
     async function leaveRoom() {
