@@ -15,13 +15,19 @@
 </head>
 <body class="bg-black text-white min-h-screen flex flex-col justify-between">
 
-  <!-- แถบ Header -->
+  <!-- แถบ Header แสดงเลขห้อง 4 หลักชัดเจน -->
   <header class="w-full bg-neutral-950 border-b border-neutral-800 px-6 py-4 flex justify-between items-center">
     <div class="flex items-center gap-3">
       <div class="w-3 h-3 rounded-full bg-sky-400 animate-pulse"></div>
-      <h1 class="text-lg md:text-xl font-bold tracking-wide">
-        FINANCIAL <span class="text-red-500">SIMULATOR</span> <span class="text-neutral-400 font-normal">| ห้องรอเล่นออนไลน์</span>
-      </h1>
+      <div>
+        <h1 class="text-base md:text-lg font-bold tracking-wide">
+          FINANCIAL <span class="text-red-500">SIMULATOR</span>
+        </h1>
+        <div class="text-xs text-neutral-400 flex items-center gap-2">
+          <span>ห้อง Lobby:</span>
+          <span id="displayRoomId" class="text-sky-400 font-mono font-bold text-sm tracking-widest bg-neutral-900 px-2 py-0.5 rounded border border-neutral-800">----</span>
+        </div>
+      </div>
     </div>
     
     <div class="flex items-center gap-4 text-sm">
@@ -29,7 +35,6 @@
         <div id="uName" class="font-semibold text-white">...</div>
         <div id="uRole" class="text-xs text-neutral-400">...</div>
       </div>
-      <!-- ปุ่มออกจากห้อง (ย้ายกลับไปหน้า Login index.html) -->
       <button onclick="leaveRoom()" class="text-xs border border-neutral-700 hover:border-red-500 px-3 py-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors">
         ออกจากห้อง
       </button>
@@ -39,7 +44,7 @@
   <!-- เนื้อหาห้องรอ -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-    <!-- รายชื่อทุกคนในห้อง (เห็นทั้งผู้เล่นและ Admin) -->
+    <!-- รายชื่อผู้เล่น -->
     <section class="lg:col-span-2 bg-neutral-900 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between shadow-lg">
       <div>
         <div class="flex justify-between items-center pb-4 border-b border-neutral-800 mb-4">
@@ -57,7 +62,7 @@
         </div>
 
         <div id="playerList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[460px] overflow-y-auto pr-1">
-          <!-- ข้อมูลผู้ใช้งานซิงก์ตรงนี้ -->
+          <!-- ผู้เล่นในห้องจะแสดงที่นี่ -->
         </div>
       </div>
 
@@ -75,7 +80,7 @@
         <div id="adminControls" class="w-full sm:w-auto hidden flex flex-wrap items-center gap-2">
           <button onclick="resetRoomForNewGame()" 
                   class="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-semibold px-3 py-3 rounded-xl transition-all border border-neutral-700">
-            ล้างห้อง (รอบใหม่)
+            ล้างห้อง
           </button>
           <button onclick="adminStartGame()" 
                   class="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-red-600/30 flex items-center justify-center gap-2">
@@ -129,36 +134,26 @@
     const db = firebase.firestore();
 
     const currentUser = JSON.parse(localStorage.getItem('gameUser'));
-    if (!currentUser) {
+    if (!currentUser || !currentUser.roomId) {
       window.location.href = "index.html";
     }
 
+    const roomId = currentUser.roomId;
+    document.getElementById('displayRoomId').innerText = roomId;
     document.getElementById('uName').innerText = currentUser.name;
     document.getElementById('uRole').innerText = currentUser.role.toUpperCase() + (currentUser.role === 'admin' ? ' 🥸' : '');
 
-    // ปรับหน้าต่างตามสิทธิ์ Admin / Player
     if (currentUser.role === 'admin') {
       document.getElementById('adminControls').classList.remove('hidden');
-      document.getElementById('readyBtn').classList.add('hidden'); // ซ่อนปุ่มพร้อมของ Player สำหรับ Admin
+      document.getElementById('readyBtn').classList.add('hidden');
     }
 
     let isMyReady = false;
-    const roomDoc = db.collection('rooms').doc('main_room');
+    const roomDoc = db.collection('rooms').doc(roomId);
 
-    // 1. ลงทะเบียนผู้ใช้งาน (ทั้ง Admin และ Player ลงทะเบียนใน collection เดียวกันเพื่อให้เห็นกัน)
+    // 1. ลงทะเบียนผู้ใช้งานเข้าห้องที่ระบุ
     async function joinRoom() {
       try {
-        const snap = await roomDoc.collection('players').get();
-        const players = snap.docs.map(d => d.data());
-        const isExisting = players.some(p => p.uid === currentUser.uid);
-        const playerCount = players.filter(p => p.role === 'player').length;
-
-        if (currentUser.role === 'player' && !isExisting && playerCount >= 20) {
-          alert("⛔ ห้องนี้มีผู้เล่นเต็ม 20 คนแล้ว กรุณารอจบเกม");
-          leaveRoom();
-          return;
-        }
-
         await roomDoc.collection('players').doc(currentUser.uid).set({
           uid: currentUser.uid,
           name: currentUser.name,
@@ -167,21 +162,20 @@
           isReady: currentUser.role === 'admin' ? true : false,
           joinedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
-
       } catch (err) {
         console.error("Error joining room:", err);
       }
     }
     joinRoom();
 
-    // 2. ตรวจสอบสถานะการเริ่มเกม
+    // 2. ฟังสถานะเริ่มเกม
     roomDoc.onSnapshot(doc => {
       if (doc.exists && doc.data().status === 'playing') {
         window.location.href = "game.html";
       }
     });
 
-    // 3. แสดงรายชื่อทุกคนในห้องแบบ Realtime
+    // 3. แสดงรายชื่อผู้เล่นในห้อง
     roomDoc.collection('players').onSnapshot(snapshot => {
       const container = document.getElementById('playerList');
       const counter = document.getElementById('playerCounter');
@@ -190,7 +184,6 @@
       const allMembers = [];
       snapshot.forEach(doc => allMembers.push(doc.data()));
 
-      // นับเฉพาะ Player เพื่อแสดงโควตา 20 คน
       const playerCount = allMembers.filter(m => m.role === 'player').length;
       counter.innerText = `${playerCount} / 20`;
 
@@ -205,7 +198,6 @@
           isAdmin ? 'border-red-500/50 bg-red-950/20' : (isSelf ? 'border-sky-500/50 bg-neutral-950' : 'border-neutral-800 bg-neutral-950/60')
         }`;
 
-        // สีไฟสถานะ (Admin จะขึ้นเขียวเสมอ)
         const statusColor = (isAdmin || p.isReady) ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-amber-400 shadow-[0_0_8px_#f59e0b]';
         const statusText = isAdmin ? 'ผู้ดูแลห้อง' : (p.isReady ? 'พร้อมแล้ว' : 'กำลังเตรียมตัว');
 
@@ -231,7 +223,7 @@
       }
     });
 
-    // 4. สลับสถานะพร้อมสำหรับ Player
+    // 4. สลับสถานะพร้อม
     async function toggleReady() {
       await roomDoc.collection('players').doc(currentUser.uid).update({
         isReady: !isMyReady
@@ -250,7 +242,7 @@
       }
     }
 
-    // 5. ระบบแชทสด
+    // 5. แชทสด
     roomDoc.collection('chat').orderBy('time', 'asc').limitToLast(50).onSnapshot(snapshot => {
       const box = document.getElementById('chatBox');
       box.innerHTML = '';
@@ -293,18 +285,17 @@
 
     // 7. Admin ล้างห้อง
     async function resetRoomForNewGame() {
-      if (!confirm("คุณต้องการล้างห้องและเริ่มรอบใหม่ใช่หรือไม่? รายชื่อผู้เล่นจะถูกเคลียร์ทั้งหมด")) return;
-      
+      if (!confirm("คุณต้องการล้างห้องใช่หรือไม่?")) return;
       const snap = await roomDoc.collection('players').get();
       const batch = db.batch();
       snap.docs.forEach(doc => batch.delete(doc.ref));
       await batch.commit();
 
       await roomDoc.set({ status: 'waiting' });
-      alert("รีเซ็ตห้องเรียบร้อย เปิดรับผู้เล่นรอบใหม่แล้ว");
+      alert("รีเซ็ตห้องเรียบร้อย");
     }
 
-    // 8. ออกจากห้อง (ทั้ง Admin และ Player จะลบตัวเองออกจากรายชื่อแล้วกลับไปหน้า Login)
+    // 8. ออกจากห้อง
     async function leaveRoom() {
       try {
         if (currentUser && currentUser.uid) {
